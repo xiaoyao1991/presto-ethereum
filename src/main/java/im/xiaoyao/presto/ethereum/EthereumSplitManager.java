@@ -46,6 +46,8 @@ public class EthereumSplitManager implements ConnectorSplitManager {
         try {
             EthBlockNumber blockNumber = web3j.ethBlockNumber().send();
 
+            log.info("current block number: " + blockNumber.getBlockNumber());
+
             ImmutableList.Builder<ConnectorSplit> splits = ImmutableList.builder();
             for (long i = 1; i <= blockNumber.getBlockNumber().longValue(); i++) {
                 EthereumSplit split = new EthereumSplit(i);
