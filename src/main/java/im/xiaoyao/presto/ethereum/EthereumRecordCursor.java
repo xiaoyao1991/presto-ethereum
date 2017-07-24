@@ -246,8 +246,7 @@ public class EthereumRecordCursor implements RecordCursor {
             return serializeMap(type, builder, object);
         }
         else if (isRowType(type)) {
-            return null;
-//            return serializeStruct(type, builder, object);
+            return serializeStruct(type, builder, object);
         }
         throw new RuntimeException("Unknown object type: " + type);
     }
@@ -325,38 +324,50 @@ public class EthereumRecordCursor implements RecordCursor {
         }
     }
 
-//    private static Block serializeStruct(Type type, BlockBuilder builder, Object object)
-//    {
-//        if (object == null) {
-//            requireNonNull(builder, "parent builder is null").appendNull();
-//            return null;
-//        }
-//
-//        List<Type> typeParameters = type.getTypeParameters();
-//        ThriftGenericRow structData = (ThriftGenericRow) object;
-//        BlockBuilder currentBuilder;
-//        if (builder != null) {
-//            currentBuilder = builder.beginBlockEntry();
-//        }
-//        else {
-//            currentBuilder = new InterleavedBlockBuilder(typeParameters, new BlockBuilderStatus(), typeParameters.size());
-//        }
-//
-//        for (int i = 0; i < typeParameters.size(); i++) {
-//            // TODO: Handle cases where ids are not consecutive
-//            Object fieldValue = structData.getFieldValueForThriftId((short) (i + 1));
-//            serializeObject(typeParameters.get(i), currentBuilder, fieldValue);
-//        }
-//
-//        if (builder != null) {
-//            builder.closeEntry();
-//            return null;
-//        }
-//        else {
-//            Block resultBlock = currentBuilder.build();
-//            return resultBlock;
-//        }
-//    }
+    private static Block serializeStruct(Type type, BlockBuilder builder, Object object)
+    {
+        if (object == null) {
+            requireNonNull(builder, "parent builder is null").appendNull();
+            return null;
+        }
+
+        List<Type> typeParameters = type.getTypeParameters();
+        EthBlock.TransactionObject structData = (EthBlock.TransactionObject) object;
+        BlockBuilder currentBuilder;
+        if (builder != null) {
+            currentBuilder = builder.beginBlockEntry();
+        }
+        else {
+            currentBuilder = new InterleavedBlockBuilder(typeParameters, new BlockBuilderStatus(), typeParameters.size());
+        }
+
+        ImmutableList.Builder<Supplier> lstBuilder = ImmutableList.builder();
+        lstBuilder.add(structData::getHash);
+        lstBuilder.add(structData::getNonce);
+        lstBuilder.add(structData::getBlockHash);
+        lstBuilder.add(structData::getBlockNumber);
+        lstBuilder.add(structData::getTransactionIndex);
+        lstBuilder.add(structData::getFrom);
+        lstBuilder.add(structData::getTo);
+        lstBuilder.add(structData::getValue);
+        lstBuilder.add(structData::getGas);
+        lstBuilder.add(structData::getGasPrice);
+        lstBuilder.add(structData::getInput);
+        ImmutableList<Supplier> txColumns = lstBuilder.build();
+
+        for (int i = 0; i < typeParameters.size(); i++) {
+            serializeObject(typeParameters.get(i), currentBuilder, txColumns.get(i).get());
+        }
+
+        if (builder != null) {
+            builder.closeEntry();
+            return null;
+        }
+        else {
+            Block resultBlock = currentBuilder.build();
+            return resultBlock;
+        }
+    }
 
     private static void serializePrimitive(Type type, BlockBuilder builder, Object object)
     {
