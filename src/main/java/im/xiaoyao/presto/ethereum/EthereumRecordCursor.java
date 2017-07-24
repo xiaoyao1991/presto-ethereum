@@ -187,8 +187,7 @@ public class EthereumRecordCursor implements RecordCursor {
     public void close() {
     }
 
-    private static long getLongExpressedValue(Object value)
-    {
+    private static long getLongExpressedValue(Object value) {
         if (value instanceof Date) {
             long storageTime = ((Date) value).getTime();
             // convert date from VM current time zone to UTC
@@ -208,19 +207,15 @@ public class EthereumRecordCursor implements RecordCursor {
         return ((Number) value).longValue();
     }
 
-    private static Slice getSliceExpressedValue(Object value, Type type)
-    {
+    private static Slice getSliceExpressedValue(Object value, Type type) {
         Slice sliceValue;
         if (value instanceof String) {
             sliceValue = Slices.utf8Slice((String) value);
-        }
-        else if (value instanceof byte[]) {
+        } else if (value instanceof byte[]) {
             sliceValue = Slices.wrappedBuffer((byte[]) value);
-        }
-        else if (value instanceof Integer) {
+        } else if (value instanceof Integer) {
             sliceValue = Slices.utf8Slice(value.toString());
-        }
-        else {
+        } else {
             throw new IllegalStateException("unsupported string field type: " + value.getClass().getName());
         }
         if (isVarcharType(type)) {
@@ -233,27 +228,21 @@ public class EthereumRecordCursor implements RecordCursor {
         return sliceValue;
     }
 
-    private static Block serializeObject(Type type, BlockBuilder builder, Object object)
-    {
+    private static Block serializeObject(Type type, BlockBuilder builder, Object object) {
         if (!isStructuralType(type)) {
             serializePrimitive(type, builder, object);
             return null;
-        }
-        else if (isArrayType(type)) {
+        } else if (isArrayType(type)) {
             return serializeList(type, builder, object);
-        }
-        else if (isMapType(type)) {
+        } else if (isMapType(type)) {
             return serializeMap(type, builder, object);
-        }
-        else if (isRowType(type)) {
-            return null;
-//            return serializeStruct(type, builder, object);
+        } else if (isRowType(type)) {
+            return serializeStruct(type, builder, object);
         }
         throw new RuntimeException("Unknown object type: " + type);
     }
 
-    private static Block serializeList(Type type, BlockBuilder builder, Object object)
-    {
+    private static Block serializeList(Type type, BlockBuilder builder, Object object) {
         List<?> list = (List) object;
         if (list == null) {
             requireNonNull(builder, "parent builder is null").appendNull();
@@ -267,8 +256,7 @@ public class EthereumRecordCursor implements RecordCursor {
         BlockBuilder currentBuilder;
         if (builder != null) {
             currentBuilder = builder.beginBlockEntry();
-        }
-        else {
+        } else {
             currentBuilder = elementType.createBlockBuilder(new BlockBuilderStatus(), list.size());
         }
 
@@ -279,15 +267,13 @@ public class EthereumRecordCursor implements RecordCursor {
         if (builder != null) {
             builder.closeEntry();
             return null;
-        }
-        else {
+        } else {
             Block resultBlock = currentBuilder.build();
             return resultBlock;
         }
     }
 
-    private static Block serializeMap(Type type, BlockBuilder builder, Object object)
-    {
+    private static Block serializeMap(Type type, BlockBuilder builder, Object object) {
         Map<?, ?> map = (Map) object;
         if (map == null) {
             requireNonNull(builder, "parent builder is null").appendNull();
@@ -302,8 +288,7 @@ public class EthereumRecordCursor implements RecordCursor {
         BlockBuilder currentBuilder;
         if (builder != null) {
             currentBuilder = builder.beginBlockEntry();
-        }
-        else {
+        } else {
             currentBuilder = new InterleavedBlockBuilder(typeParameters, new BlockBuilderStatus(), map.size());
         }
 
@@ -318,48 +303,55 @@ public class EthereumRecordCursor implements RecordCursor {
         if (builder != null) {
             builder.closeEntry();
             return null;
-        }
-        else {
+        } else {
             Block resultBlock = currentBuilder.build();
             return resultBlock;
         }
     }
 
-//    private static Block serializeStruct(Type type, BlockBuilder builder, Object object)
-//    {
-//        if (object == null) {
-//            requireNonNull(builder, "parent builder is null").appendNull();
-//            return null;
-//        }
-//
-//        List<Type> typeParameters = type.getTypeParameters();
-//        ThriftGenericRow structData = (ThriftGenericRow) object;
-//        BlockBuilder currentBuilder;
-//        if (builder != null) {
-//            currentBuilder = builder.beginBlockEntry();
-//        }
-//        else {
-//            currentBuilder = new InterleavedBlockBuilder(typeParameters, new BlockBuilderStatus(), typeParameters.size());
-//        }
-//
-//        for (int i = 0; i < typeParameters.size(); i++) {
-//            // TODO: Handle cases where ids are not consecutive
-//            Object fieldValue = structData.getFieldValueForThriftId((short) (i + 1));
-//            serializeObject(typeParameters.get(i), currentBuilder, fieldValue);
-//        }
-//
-//        if (builder != null) {
-//            builder.closeEntry();
-//            return null;
-//        }
-//        else {
-//            Block resultBlock = currentBuilder.build();
-//            return resultBlock;
-//        }
-//    }
+    private static Block serializeStruct(Type type, BlockBuilder builder, Object object) {
+        if (object == null) {
+            requireNonNull(builder, "parent builder is null").appendNull();
+            return null;
+        }
 
-    private static void serializePrimitive(Type type, BlockBuilder builder, Object object)
-    {
+        List<Type> typeParameters = type.getTypeParameters();
+        EthBlock.TransactionObject structData = (EthBlock.TransactionObject) object;
+        BlockBuilder currentBuilder;
+        if (builder != null) {
+            currentBuilder = builder.beginBlockEntry();
+        } else {
+            currentBuilder = new InterleavedBlockBuilder(typeParameters, new BlockBuilderStatus(), typeParameters.size());
+        }
+
+        ImmutableList.Builder<Supplier> lstBuilder = ImmutableList.builder();
+        lstBuilder.add(structData::getHash);
+        lstBuilder.add(structData::getNonce);
+        lstBuilder.add(structData::getBlockHash);
+        lstBuilder.add(structData::getBlockNumber);
+        lstBuilder.add(structData::getTransactionIndex);
+        lstBuilder.add(structData::getFrom);
+        lstBuilder.add(structData::getTo);
+        lstBuilder.add(structData::getValue);
+        lstBuilder.add(structData::getGas);
+        lstBuilder.add(structData::getGasPrice);
+        lstBuilder.add(structData::getInput);
+        ImmutableList<Supplier> txColumns = lstBuilder.build();
+
+        for (int i = 0; i < typeParameters.size(); i++) {
+            serializeObject(typeParameters.get(i), currentBuilder, txColumns.get(i).get());
+        }
+
+        if (builder != null) {
+            builder.closeEntry();
+            return null;
+        } else {
+            Block resultBlock = currentBuilder.build();
+            return resultBlock;
+        }
+    }
+
+    private static void serializePrimitive(Type type, BlockBuilder builder, Object object) {
         requireNonNull(builder, "parent builder is null");
 
         if (object == null) {
@@ -369,39 +361,31 @@ public class EthereumRecordCursor implements RecordCursor {
 
         if (BOOLEAN.equals(type)) {
             BOOLEAN.writeBoolean(builder, (Boolean) object);
-        }
-        else if (BIGINT.equals(type) || INTEGER.equals(type) || SMALLINT.equals(type) || TINYINT.equals(type)
+        } else if (BIGINT.equals(type) || INTEGER.equals(type) || SMALLINT.equals(type) || TINYINT.equals(type)
                 || REAL.equals(type) || DATE.equals(type) || TIMESTAMP.equals(type)) {
             type.writeLong(builder, getLongExpressedValue(object));
-        }
-        else if (DOUBLE.equals(type)) {
+        } else if (DOUBLE.equals(type)) {
             DOUBLE.writeDouble(builder, ((Number) object).doubleValue());
-        }
-        else if (isVarcharType(type) || VARBINARY.equals(type) || isCharType(type)) {
+        } else if (isVarcharType(type) || VARBINARY.equals(type) || isCharType(type)) {
             type.writeSlice(builder, getSliceExpressedValue(object, type));
-        }
-        else {
+        } else {
             throw new UnsupportedOperationException("Unsupported primitive type: " + type);
         }
     }
 
-    public static boolean isArrayType(Type type)
-    {
+    public static boolean isArrayType(Type type) {
         return type.getTypeSignature().getBase().equals(StandardTypes.ARRAY);
     }
 
-    public static boolean isMapType(Type type)
-    {
+    public static boolean isMapType(Type type) {
         return type.getTypeSignature().getBase().equals(StandardTypes.MAP);
     }
 
-    public static boolean isRowType(Type type)
-    {
+    public static boolean isRowType(Type type) {
         return type.getTypeSignature().getBase().equals(StandardTypes.ROW);
     }
 
-    public static boolean isStructuralType(Type type)
-    {
+    public static boolean isStructuralType(Type type) {
         String baseName = type.getTypeSignature().getBase();
         return baseName.equals(StandardTypes.MAP) || baseName.equals(StandardTypes.ARRAY) || baseName.equals(StandardTypes.ROW);
     }
