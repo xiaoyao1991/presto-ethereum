@@ -15,12 +15,14 @@ import com.facebook.presto.spi.connector.ConnectorMetadata;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker;
 import com.facebook.presto.spi.predicate.Range;
+import com.facebook.presto.spi.predicate.Ranges;
 import com.facebook.presto.spi.type.ArrayType;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.IntegerType;
 import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.airlift.log.Logger;
 
 import javax.inject.Inject;
 import java.util.Collections;
@@ -34,6 +36,8 @@ import static im.xiaoyao.presto.ethereum.EthereumHandleResolver.convertTableHand
 import static java.util.Objects.requireNonNull;
 
 public class EthereumMetadata implements ConnectorMetadata {
+    private static final Logger log = Logger.get(EthereumMetadata.class);
+
     private static final String DEFAULT_SCHEMA = "default";
     private static final int H8_BYTE_HASH_STRING_LENGTH = 2 + 8 * 2;
     private static final int H32_BYTE_HASH_STRING_LENGTH = 2 + 32 * 2;
@@ -162,31 +166,31 @@ public class EthereumMetadata implements ConnectorMetadata {
             Constraint<ColumnHandle> constraint,
             Optional<Set<ColumnHandle>> desiredColumns
     ) {
-        // TODO: Optimize logic
-        Long startBlock = null;
-        Long endBlock = null;
+        ImmutableList.Builder<EthereumBlockRange> builder = ImmutableList.builder();
+
         Optional<Map<ColumnHandle, Domain>> domains = constraint.getSummary().getDomains();
         if (domains.isPresent()) {
             Map<ColumnHandle, Domain> columnHandleDomainMap = domains.get();
+            log.info(columnHandleDomainMap.toString());
             for (Map.Entry<ColumnHandle, Domain> entry : columnHandleDomainMap.entrySet()) {
                 if (entry.getKey() instanceof EthereumColumnHandle
                         && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_number")
                         || ((EthereumColumnHandle) entry.getKey()).getName().equals("tx_blockNumber"))) {
-                    Range span = entry.getValue().getValues().getRanges().getSpan();
-                    Marker low = span.getLow();
-                    Marker high = span.getHigh();
-                    if (!low.isLowerUnbounded()) {
-                        startBlock = (Long) low.getValue();
-                    }
-                    if (!high.isUpperUnbounded()) {
-                        endBlock = (Long) high.getValue();
+                    Ranges ranges = entry.getValue().getValues().getRanges();
+                    List<Range> orderedRanges = ranges.getOrderedRanges();
+                    for (Range r : orderedRanges) {
+                        log.info("%s - %s", r.getLow().toString(null), r.getHigh().toString(null));
+                        Marker low = r.getLow();
+                        Marker high = r.getHigh();
+                        builder.add(new EthereumBlockRange(low.isLowerUnbounded() ? 1L : (Long) low.getValue(),
+                                high.isUpperUnbounded() ? -1 : (Long) high.getValue()));
                     }
                 }
             }
         }
 
         EthereumTableHandle handle = convertTableHandle(table);
-        ConnectorTableLayout layout = new ConnectorTableLayout(new EthereumTableLayoutHandle(handle, startBlock, endBlock));
+        ConnectorTableLayout layout = new ConnectorTableLayout(new EthereumTableLayoutHandle(handle, builder.build()));
         return ImmutableList.of(new ConnectorTableLayoutResult(layout, constraint.getSummary()));
     }
 

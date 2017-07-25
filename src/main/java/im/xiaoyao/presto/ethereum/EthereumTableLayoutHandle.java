@@ -5,24 +5,23 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.ToString;
 
+import java.util.List;
+
 import static java.util.Objects.requireNonNull;
 
 @ToString
 public class EthereumTableLayoutHandle implements ConnectorTableLayoutHandle {
     private final EthereumTableHandle table;
 
-    private final long startBlock;
-    private final long endBlock;
+    private final List<EthereumBlockRange> blockRanges;
 
     @JsonCreator
     public EthereumTableLayoutHandle(
             @JsonProperty("table") EthereumTableHandle table,
-            @JsonProperty("startBlock") Long startBlock,
-            @JsonProperty("endBlock") Long endBlock
+            @JsonProperty("blockRanges") List<EthereumBlockRange> blockRanges
     ) {
         this.table = requireNonNull(table, "table is null");
-        this.startBlock = startBlock == null ? 1 : startBlock;
-        this.endBlock = endBlock == null ? -1 : endBlock;
+        this.blockRanges = requireNonNull(blockRanges, "blockRanges is null");
     }
 
     @JsonProperty
@@ -31,12 +30,7 @@ public class EthereumTableLayoutHandle implements ConnectorTableLayoutHandle {
     }
 
     @JsonProperty
-    public long getStartBlock() {
-        return startBlock;
-    }
-
-    @JsonProperty
-    public long getEndBlock() {
-        return endBlock;
+    public List<EthereumBlockRange> getBlockRanges() {
+        return blockRanges;
     }
 }

@@ -47,16 +47,17 @@ public class EthereumSplitManager implements ConnectorSplitManager {
         try {
             EthBlockNumber blockNumber = web3j.ethBlockNumber().send();
             log.info("current block number: " + blockNumber.getBlockNumber());
-            log.info("start: %d\tend: %d", tableLayoutHandle.getStartBlock(), tableLayoutHandle.getEndBlock());
-
             ImmutableList.Builder<ConnectorSplit> splits = ImmutableList.builder();
-            for (long i = tableLayoutHandle.getStartBlock(); i <= (tableLayoutHandle.getEndBlock() == -1 ? blockNumber.getBlockNumber().longValue() : tableLayoutHandle.getEndBlock()); i++) {
-                EthereumSplit split = new EthereumSplit(i, EthereumTable.valueOf(tableHandle.getTableName().toUpperCase()));
-                splits.add(split);
+
+            for (EthereumBlockRange blockRange : tableLayoutHandle.getBlockRanges()) {
+                log.info("start: %d\tend: %d", blockRange.getStartBlock(), blockRange.getEndBlock());
+                for (long i = blockRange.getStartBlock(); i <= (blockRange.getEndBlock() == -1 ? blockNumber.getBlockNumber().longValue() : blockRange.getEndBlock()); i++) {
+                    EthereumSplit split = new EthereumSplit(i, EthereumTable.valueOf(tableHandle.getTableName().toUpperCase()));
+                    splits.add(split);
+                }
             }
 
             return new FixedSplitSource(splits.build());
-
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Cannot get block number: ", e);
