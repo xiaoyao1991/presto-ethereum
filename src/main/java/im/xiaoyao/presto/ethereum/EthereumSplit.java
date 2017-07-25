@@ -24,12 +24,6 @@ public class EthereumSplit implements ConnectorSplit {
         this.blockHash = null;
     }
 
-//    @JsonCreator
-//    public EthereumSplit(@JsonProperty("blockHash") String blockHash) {
-//        this.blockId = -1L;
-//        this.blockHash = blockHash;
-//    }
-
     @JsonProperty
     public long getBlockId() {
         return blockId;

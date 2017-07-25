@@ -12,6 +12,9 @@ import com.facebook.presto.spi.Constraint;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
 import com.facebook.presto.spi.connector.ConnectorMetadata;
+import com.facebook.presto.spi.predicate.Domain;
+import com.facebook.presto.spi.predicate.Marker;
+import com.facebook.presto.spi.predicate.Range;
 import com.facebook.presto.spi.type.ArrayType;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.IntegerType;
@@ -159,8 +162,31 @@ public class EthereumMetadata implements ConnectorMetadata {
             Constraint<ColumnHandle> constraint,
             Optional<Set<ColumnHandle>> desiredColumns
     ) {
+        // TODO: Optimize logic
+        Long startBlock = null;
+        Long endBlock = null;
+        Optional<Map<ColumnHandle, Domain>> domains = constraint.getSummary().getDomains();
+        if (domains.isPresent()) {
+            Map<ColumnHandle, Domain> columnHandleDomainMap = domains.get();
+            for (Map.Entry<ColumnHandle, Domain> entry : columnHandleDomainMap.entrySet()) {
+                if (entry.getKey() instanceof EthereumColumnHandle
+                        && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_number")
+                        || ((EthereumColumnHandle) entry.getKey()).getName().equals("tx_blockNumber"))) {
+                    Range span = entry.getValue().getValues().getRanges().getSpan();
+                    Marker low = span.getLow();
+                    Marker high = span.getHigh();
+                    if (!low.isLowerUnbounded()) {
+                        startBlock = (Long) low.getValue();
+                    }
+                    if (!high.isUpperUnbounded()) {
+                        endBlock = (Long) high.getValue();
+                    }
+                }
+            }
+        }
+
         EthereumTableHandle handle = convertTableHandle(table);
-        ConnectorTableLayout layout = new ConnectorTableLayout(new EthereumTableLayoutHandle(handle));
+        ConnectorTableLayout layout = new ConnectorTableLayout(new EthereumTableLayoutHandle(handle, startBlock, endBlock));
         return ImmutableList.of(new ConnectorTableLayoutResult(layout, constraint.getSummary()));
     }
 

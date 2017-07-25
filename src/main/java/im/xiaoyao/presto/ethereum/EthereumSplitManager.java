@@ -41,15 +41,16 @@ public class EthereumSplitManager implements ConnectorSplitManager {
             ConnectorSession session,
             ConnectorTableLayoutHandle layout
     ) {
-        EthereumTableHandle tableHandle = convertLayout(layout).getTable();
+        EthereumTableLayoutHandle tableLayoutHandle = convertLayout(layout);
+        EthereumTableHandle tableHandle = tableLayoutHandle.getTable();
 
         try {
             EthBlockNumber blockNumber = web3j.ethBlockNumber().send();
-
             log.info("current block number: " + blockNumber.getBlockNumber());
+            log.info("start: %d\tend: %d", tableLayoutHandle.getStartBlock(), tableLayoutHandle.getEndBlock());
 
             ImmutableList.Builder<ConnectorSplit> splits = ImmutableList.builder();
-            for (long i = 1367347; i <= blockNumber.getBlockNumber().longValue(); i++) {
+            for (long i = tableLayoutHandle.getStartBlock(); i <= (tableLayoutHandle.getEndBlock() == -1 ? blockNumber.getBlockNumber().longValue() : tableLayoutHandle.getEndBlock()); i++) {
                 EthereumSplit split = new EthereumSplit(i, EthereumTable.valueOf(tableHandle.getTableName().toUpperCase()));
                 splits.add(split);
             }
