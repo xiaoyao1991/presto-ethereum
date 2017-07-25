@@ -171,7 +171,6 @@ public class EthereumMetadata implements ConnectorMetadata {
         Optional<Map<ColumnHandle, Domain>> domains = constraint.getSummary().getDomains();
         if (domains.isPresent()) {
             Map<ColumnHandle, Domain> columnHandleDomainMap = domains.get();
-            log.info(columnHandleDomainMap.toString());
             for (Map.Entry<ColumnHandle, Domain> entry : columnHandleDomainMap.entrySet()) {
                 if (entry.getKey() instanceof EthereumColumnHandle
                         && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_number")
@@ -179,7 +178,6 @@ public class EthereumMetadata implements ConnectorMetadata {
                     Ranges ranges = entry.getValue().getValues().getRanges();
                     List<Range> orderedRanges = ranges.getOrderedRanges();
                     for (Range r : orderedRanges) {
-                        log.info("%s - %s", r.getLow().toString(null), r.getHigh().toString(null));
                         Marker low = r.getLow();
                         Marker high = r.getHigh();
                         builder.add(new EthereumBlockRange(low.isLowerUnbounded() ? 1L : (Long) low.getValue(),

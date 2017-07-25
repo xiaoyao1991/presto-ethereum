@@ -57,6 +57,13 @@ public class EthereumSplitManager implements ConnectorSplitManager {
                 }
             }
 
+            if (tableLayoutHandle.getBlockRanges().isEmpty()) {
+                for (long i = 1; i <= blockNumber.getBlockNumber().longValue(); i++) {
+                    EthereumSplit split = new EthereumSplit(i, EthereumTable.valueOf(tableHandle.getTableName().toUpperCase()));
+                    splits.add(split);
+                }
+            }
+
             return new FixedSplitSource(splits.build());
         } catch (IOException e) {
             e.printStackTrace();
