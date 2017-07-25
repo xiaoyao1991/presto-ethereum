@@ -1,5 +1,5 @@
 # Presto Ethereum Connector
-Unlease the Power of Presto Interactive SQL Querying on Ethereum Blockchain
+Unleash the Power of Presto Interactive SQL Querying on Ethereum Blockchain
 
 ### Introduction
 [Presto](https://prestodb.io) is a powerful interactive querying engine that enables running SQL queries on anything -- be it MySQL, HDFS, local file, Kafka -- as long as there exist a connector to the source.
