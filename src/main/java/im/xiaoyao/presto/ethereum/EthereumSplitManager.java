@@ -49,8 +49,8 @@ public class EthereumSplitManager implements ConnectorSplitManager {
             log.info("current block number: " + blockNumber.getBlockNumber());
 
             ImmutableList.Builder<ConnectorSplit> splits = ImmutableList.builder();
-            for (long i = 1; i <= blockNumber.getBlockNumber().longValue(); i++) {
-                EthereumSplit split = new EthereumSplit(i);
+            for (long i = 1367347; i <= blockNumber.getBlockNumber().longValue(); i++) {
+                EthereumSplit split = new EthereumSplit(i, EthereumTable.valueOf(tableHandle.getTableName().toUpperCase()));
                 splits.add(split);
             }
 

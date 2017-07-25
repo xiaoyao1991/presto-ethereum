@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
@@ -41,15 +42,19 @@ import static java.util.Objects.requireNonNull;
 
 public class EthereumRecordCursor implements RecordCursor {
     private final EthBlock block;
-    private final Iterator<EthBlock> iter;
+    private final Iterator<EthBlock> blockIter;
+    private final Iterator<EthBlock.TransactionResult> txIter;
+
+    private final EthereumTable table;
 
     private final List<EthereumColumnHandle> columnHandles;
     private final int[] fieldToColumnIndex;
 
     private List<Supplier> suppliers;
 
-    public EthereumRecordCursor(List<EthereumColumnHandle> columnHandles, EthBlock block) {
+    public EthereumRecordCursor(List<EthereumColumnHandle> columnHandles, EthBlock block, EthereumTable table) {
         this.columnHandles = columnHandles;
+        this.table = table;
 
         fieldToColumnIndex = new int[columnHandles.size()];
         for (int i = 0; i < columnHandles.size(); i++) {
@@ -59,7 +64,8 @@ public class EthereumRecordCursor implements RecordCursor {
 
         // TODO: handle failure upstream
         this.block = requireNonNull(block, "block is null");
-        this.iter = ImmutableList.of(block).iterator();
+        this.blockIter = ImmutableList.of(block).iterator();
+        this.txIter = block.getBlock().getTransactions().iterator();
     }
 
     @Override
@@ -85,77 +91,65 @@ public class EthereumRecordCursor implements RecordCursor {
 
     @Override
     public boolean advanceNextPosition() {
-        if (!iter.hasNext()) {
+        if (table == EthereumTable.BLOCK && !blockIter.hasNext()
+                || table == EthereumTable.TRANSACTION && !txIter.hasNext()) {
             return false;
         }
 
-        iter.next();
-
         ImmutableList.Builder<Supplier> builder = ImmutableList.builder();
+        if (table == EthereumTable.BLOCK) {
+            blockIter.next();
+            EthBlock.Block blockBlock = this.block.getBlock();
+            builder.add(blockBlock::getNumber);
+            builder.add(blockBlock::getHash);
+            builder.add(blockBlock::getParentHash);
+            builder.add(blockBlock::getNonceRaw);
+            builder.add(blockBlock::getSha3Uncles);
+            builder.add(blockBlock::getLogsBloom);
+            builder.add(blockBlock::getTransactionsRoot);
+            builder.add(blockBlock::getStateRoot);
+            builder.add(blockBlock::getMiner);
+            builder.add(blockBlock::getDifficulty);
+            builder.add(blockBlock::getTotalDifficulty);
+            builder.add(blockBlock::getSize);
+            builder.add(blockBlock::getExtraData);
+            builder.add(blockBlock::getGasLimit);
+            builder.add(blockBlock::getGasUsed);
+            builder.add(blockBlock::getTimestamp);
+            builder.add(() -> {
+                return blockBlock.getTransactions()
+                        .stream()
+                        .map(tr -> ((EthBlock.TransactionObject) tr.get()).getHash())
+                        .collect(Collectors.toList());
+            });
+            builder.add(blockBlock::getUncles);
 
-        builder.add(() -> {
-            return block.getBlock().getNumber();
-        });
-        builder.add(() -> {
-            return block.getBlock().getHash();
-        });
-        builder.add(() -> {
-            return block.getBlock().getParentHash();
-        });
-        builder.add(() -> {
-            return block.getBlock().getNonceRaw();
-        });
-        builder.add(() -> {
-            return block.getBlock().getSha3Uncles();
-        });
-        builder.add(() -> {
-            return block.getBlock().getLogsBloom();
-        });
-        builder.add(() -> {
-            return block.getBlock().getTransactionsRoot();
-        });
-        builder.add(() -> {
-            return block.getBlock().getStateRoot();
-        });
-        builder.add(() -> {
-            return block.getBlock().getMiner();
-        });
-        builder.add(() -> {
-            return block.getBlock().getDifficulty();
-        });
-        builder.add(() -> {
-            return block.getBlock().getTotalDifficulty();
-        });
-        builder.add(() -> {
-            return block.getBlock().getSize();
-        });
-        builder.add(() -> {
-            return block.getBlock().getExtraData();
-        });
-        builder.add(() -> {
-            return block.getBlock().getGasLimit();
-        });
-        builder.add(() -> {
-            return block.getBlock().getGasUsed();
-        });
-        builder.add(() -> {
-            return block.getBlock().getTimestamp();
-        });
-        builder.add(() -> {
-            return block.getBlock().getTransactions();
-        });
-        builder.add(() -> {
-            return block.getBlock().getUncles();
-        });
+        } else if (table == EthereumTable.TRANSACTION) {
+            EthBlock.TransactionResult tr = txIter.next();
+            EthBlock.TransactionObject tx = (EthBlock.TransactionObject) tr.get();
+
+            builder.add(tx::getHash);
+            builder.add(tx::getNonce);
+            builder.add(tx::getBlockHash);
+            builder.add(tx::getBlockNumber);
+            builder.add(tx::getTransactionIndex);
+            builder.add(tx::getFrom);
+            builder.add(tx::getTo);
+            builder.add(tx::getValue);
+            builder.add(tx::getGas);
+            builder.add(tx::getGasPrice);
+            builder.add(tx::getInput);
+        } else {
+            return false;
+        }
 
         this.suppliers = builder.build();
-
         return true;
     }
 
     @Override
     public boolean getBoolean(int field) {
-        return false;
+        return (boolean) suppliers.get(fieldToColumnIndex[field]).get();
     }
 
     @Override

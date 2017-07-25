@@ -15,7 +15,6 @@ import com.facebook.presto.spi.connector.ConnectorMetadata;
 import com.facebook.presto.spi.type.ArrayType;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.IntegerType;
-import com.facebook.presto.spi.type.RowType;
 import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +31,7 @@ import static im.xiaoyao.presto.ethereum.EthereumHandleResolver.convertTableHand
 import static java.util.Objects.requireNonNull;
 
 public class EthereumMetadata implements ConnectorMetadata {
+    private static final String DEFAULT_SCHEMA = "default";
     private static final int H8_BYTE_HASH_STRING_LENGTH = 2 + 8 * 2;
     private static final int H32_BYTE_HASH_STRING_LENGTH = 2 + 32 * 2;
     private static final int H256_BYTE_HASH_STRING_LENGTH = 2 + 256 * 2;
@@ -51,12 +51,18 @@ public class EthereumMetadata implements ConnectorMetadata {
     @Override
     public List<String> listSchemaNames(ConnectorSession session) {
 //        return Arrays.stream(EthereumSchema.values()).map(EthereumSchema::getName).collect(Collectors.toList());
-        return Collections.singletonList("default");
+        return Collections.singletonList(DEFAULT_SCHEMA);
     }
 
     @Override
     public EthereumTableHandle getTableHandle(ConnectorSession session, SchemaTableName schemaTableName) {
-        return new EthereumTableHandle(connectorId, "default", "blockchain");
+        if (EthereumTable.BLOCK.getName().equals(schemaTableName.getTableName())) {
+            return new EthereumTableHandle(connectorId, DEFAULT_SCHEMA, EthereumTable.BLOCK.getName());
+        } else if (EthereumTable.TRANSACTION.getName().equals(schemaTableName.getTableName())) {
+            return new EthereumTableHandle(connectorId, DEFAULT_SCHEMA, EthereumTable.TRANSACTION.getName());
+        } else {
+            throw new IllegalArgumentException("Unknown Table Name " + schemaTableName.getTableName());
+        }
     }
 
     @Override
@@ -67,60 +73,52 @@ public class EthereumMetadata implements ConnectorMetadata {
     @Override
     public List<SchemaTableName> listTables(ConnectorSession session, String schemaNameOrNull)
     {
-        return ImmutableList.of(new SchemaTableName("default", "blockchain"));
+        return ImmutableList.of(new SchemaTableName(DEFAULT_SCHEMA, EthereumTable.BLOCK.getName()),
+                new SchemaTableName(DEFAULT_SCHEMA, EthereumTable.TRANSACTION.getName()));
     }
 
     @SuppressWarnings("ValueOfIncrementOrDecrementUsed")
     @Override
-    public Map<String, ColumnHandle> getColumnHandles(ConnectorSession session, ConnectorTableHandle tableHandle)
-    {
+    public Map<String, ColumnHandle> getColumnHandles(ConnectorSession session, ConnectorTableHandle tableHandle) {
+        EthereumTableHandle ethereumTableHandle = convertTableHandle(tableHandle);
+        String tableName = ethereumTableHandle.getTableName();
+
         ImmutableMap.Builder<String, ColumnHandle> columnHandles = ImmutableMap.builder();
-
         int index = 0;
-
-        columnHandles.put("block_number", new EthereumColumnHandle(connectorId, index++, "block_number", BigintType.BIGINT));
-        columnHandles.put("block_hash", new EthereumColumnHandle(connectorId, index++, "block_hash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        columnHandles.put("block_parentHash", new EthereumColumnHandle(connectorId, index++, "block_parentHash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        columnHandles.put("block_nonce", new EthereumColumnHandle(connectorId, index++, "block_nonce", VarcharType.createVarcharType(H8_BYTE_HASH_STRING_LENGTH)));
-        columnHandles.put("block_sha3Uncles", new EthereumColumnHandle(connectorId, index++, "block_sha3Uncles", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        columnHandles.put("block_logsBloom", new EthereumColumnHandle(connectorId, index++, "block_logsBloom", VarcharType.createVarcharType(H256_BYTE_HASH_STRING_LENGTH)));
-        columnHandles.put("block_transactionsRoot", new EthereumColumnHandle(connectorId, index++, "block_transactionsRoot", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        columnHandles.put("block_stateRoot", new EthereumColumnHandle(connectorId, index++, "block_stateRoot", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        columnHandles.put("block_miner", new EthereumColumnHandle(connectorId, index++, "block_miner", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
-        columnHandles.put("block_difficulty", new EthereumColumnHandle(connectorId, index++, "block_difficulty", BigintType.BIGINT));
-        columnHandles.put("block_totalDifficulty", new EthereumColumnHandle(connectorId, index++, "block_totalDifficulty", BigintType.BIGINT));
-        columnHandles.put("block_size", new EthereumColumnHandle(connectorId, index++, "block_size", IntegerType.INTEGER));
-        columnHandles.put("block_extraData", new EthereumColumnHandle(connectorId, index++, "block_extraData", VarcharType.VARCHAR));
-        columnHandles.put("block_gasLimit", new EthereumColumnHandle(connectorId, index++, "block_gasLimit", BigintType.BIGINT));
-        columnHandles.put("block_gasUsed", new EthereumColumnHandle(connectorId, index++, "block_gasUsed", BigintType.BIGINT));
-        columnHandles.put("block_timestamp", new EthereumColumnHandle(connectorId, index++, "block_timestamp", BigintType.BIGINT));
-        columnHandles.put("block_transactions", new EthereumColumnHandle(connectorId, index++, "block_transactions", new ArrayType(new RowType(
-                ImmutableList.of(
-                        VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH),
-                        BigintType.BIGINT,
-                        VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH),
-                        BigintType.BIGINT,
-                        IntegerType.INTEGER,
-                        VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH),
-                        VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH),
-                        BigintType.BIGINT,
-                        BigintType.BIGINT,
-                        BigintType.BIGINT,
-                        VarcharType.VARCHAR),
-                Optional.of(ImmutableList.of(
-                        "tx_hash",
-                        "tx_nonce",
-                        "tx_blockHash",
-                        "tx_blockNumber",
-                        "tx_transactionIndex",
-                        "tx_from",
-                        "tx_to",
-                        "tx_value",
-                        "tx_gas",
-                        "tx_gasPrice",
-                        "tx_input")
-                )))));
-        columnHandles.put("block_uncles", new EthereumColumnHandle(connectorId, index++, "block_uncles", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
+        if (EthereumTable.BLOCK.getName().equals(tableName)) {
+            columnHandles.put("block_number", new EthereumColumnHandle(connectorId, index++, "block_number", BigintType.BIGINT));
+            columnHandles.put("block_hash", new EthereumColumnHandle(connectorId, index++, "block_hash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("block_parentHash", new EthereumColumnHandle(connectorId, index++, "block_parentHash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("block_nonce", new EthereumColumnHandle(connectorId, index++, "block_nonce", VarcharType.createVarcharType(H8_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("block_sha3Uncles", new EthereumColumnHandle(connectorId, index++, "block_sha3Uncles", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("block_logsBloom", new EthereumColumnHandle(connectorId, index++, "block_logsBloom", VarcharType.createVarcharType(H256_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("block_transactionsRoot", new EthereumColumnHandle(connectorId, index++, "block_transactionsRoot", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("block_stateRoot", new EthereumColumnHandle(connectorId, index++, "block_stateRoot", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("block_miner", new EthereumColumnHandle(connectorId, index++, "block_miner", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("block_difficulty", new EthereumColumnHandle(connectorId, index++, "block_difficulty", BigintType.BIGINT));
+            columnHandles.put("block_totalDifficulty", new EthereumColumnHandle(connectorId, index++, "block_totalDifficulty", BigintType.BIGINT));
+            columnHandles.put("block_size", new EthereumColumnHandle(connectorId, index++, "block_size", IntegerType.INTEGER));
+            columnHandles.put("block_extraData", new EthereumColumnHandle(connectorId, index++, "block_extraData", VarcharType.VARCHAR));
+            columnHandles.put("block_gasLimit", new EthereumColumnHandle(connectorId, index++, "block_gasLimit", BigintType.BIGINT));
+            columnHandles.put("block_gasUsed", new EthereumColumnHandle(connectorId, index++, "block_gasUsed", BigintType.BIGINT));
+            columnHandles.put("block_timestamp", new EthereumColumnHandle(connectorId, index++, "block_timestamp", BigintType.BIGINT));
+            columnHandles.put("block_transactions", new EthereumColumnHandle(connectorId, index++, "block_transactions", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
+            columnHandles.put("block_uncles", new EthereumColumnHandle(connectorId, index++, "block_uncles", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
+        } else if (EthereumTable.TRANSACTION.getName().equals(tableName)) {
+            columnHandles.put("tx_hash", new EthereumColumnHandle(connectorId, index++, "tx_hash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("tx_nonce", new EthereumColumnHandle(connectorId, index++, "tx_nonce", BigintType.BIGINT));
+            columnHandles.put("tx_blockHash", new EthereumColumnHandle(connectorId, index++, "tx_blockHash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("tx_blockNumber", new EthereumColumnHandle(connectorId, index++, "tx_blockNumber", BigintType.BIGINT));
+            columnHandles.put("tx_transactionIndex", new EthereumColumnHandle(connectorId, index++, "tx_transactionIndex", IntegerType.INTEGER));
+            columnHandles.put("tx_from", new EthereumColumnHandle(connectorId, index++, "tx_from", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("tx_to", new EthereumColumnHandle(connectorId, index++, "tx_to", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
+            columnHandles.put("tx_value", new EthereumColumnHandle(connectorId, index++, "tx_value", BigintType.BIGINT));
+            columnHandles.put("tx_gas", new EthereumColumnHandle(connectorId, index++, "tx_gas", BigintType.BIGINT));
+            columnHandles.put("tx_gasPrice", new EthereumColumnHandle(connectorId, index++, "tx_gasPrice", BigintType.BIGINT));
+            columnHandles.put("tx_input", new EthereumColumnHandle(connectorId, index++, "tx_input", VarcharType.VARCHAR));
+        } else {
+            throw new IllegalArgumentException("Unknown Table Name " + tableName);
+        }
 
         return columnHandles.build();
     }
@@ -176,49 +174,40 @@ public class EthereumMetadata implements ConnectorMetadata {
     {
         ImmutableList.Builder<ColumnMetadata> builder = ImmutableList.builder();
 
-        builder.add(new ColumnMetadata("block_number", BigintType.BIGINT));
-        builder.add(new ColumnMetadata("block_hash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        builder.add(new ColumnMetadata("block_parentHash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        builder.add(new ColumnMetadata("block_nonce", VarcharType.createVarcharType(H8_BYTE_HASH_STRING_LENGTH)));
-        builder.add(new ColumnMetadata("block_sha3Uncles", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        builder.add(new ColumnMetadata("block_logsBloom", VarcharType.createVarcharType(H256_BYTE_HASH_STRING_LENGTH)));
-        builder.add(new ColumnMetadata("block_transactionsRoot", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        builder.add(new ColumnMetadata("block_stateRoot", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
-        builder.add(new ColumnMetadata("block_miner", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
-        builder.add(new ColumnMetadata("block_difficulty", BigintType.BIGINT));
-        builder.add(new ColumnMetadata("block_totalDifficulty", BigintType.BIGINT));
-        builder.add(new ColumnMetadata("block_size", IntegerType.INTEGER));
-        builder.add(new ColumnMetadata("block_extraData", VarcharType.VARCHAR));
-        builder.add(new ColumnMetadata("block_gasLimit", BigintType.BIGINT));
-        builder.add(new ColumnMetadata("block_gasUsed", BigintType.BIGINT));
-        builder.add(new ColumnMetadata("block_timestamp", BigintType.BIGINT));
-        builder.add(new ColumnMetadata("block_transactions", new ArrayType(new RowType(
-                ImmutableList.of(
-                        VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH),
-                        BigintType.BIGINT,
-                        VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH),
-                        BigintType.BIGINT,
-                        IntegerType.INTEGER,
-                        VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH),
-                        VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH),
-                        BigintType.BIGINT,
-                        BigintType.BIGINT,
-                        BigintType.BIGINT,
-                        VarcharType.VARCHAR),
-                Optional.of(ImmutableList.of(
-                        "tx_hash",
-                        "tx_nonce",
-                        "tx_blockHash",
-                        "tx_blockNumber",
-                        "tx_transactionIndex",
-                        "tx_from",
-                        "tx_to",
-                        "tx_value",
-                        "tx_gas",
-                        "tx_gasPrice",
-                        "tx_input")
-                )))));
-        builder.add(new ColumnMetadata("block_uncles", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
+        if (EthereumTable.BLOCK.getName().equals(schemaTableName.getTableName())) {
+            builder.add(new ColumnMetadata("block_number", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("block_hash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("block_parentHash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("block_nonce", VarcharType.createVarcharType(H8_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("block_sha3Uncles", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("block_logsBloom", VarcharType.createVarcharType(H256_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("block_transactionsRoot", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("block_stateRoot", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("block_miner", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("block_difficulty", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("block_totalDifficulty", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("block_size", IntegerType.INTEGER));
+            builder.add(new ColumnMetadata("block_extraData", VarcharType.VARCHAR));
+            builder.add(new ColumnMetadata("block_gasLimit", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("block_gasUsed", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("block_timestamp", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("block_transactions", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
+            builder.add(new ColumnMetadata("block_uncles", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
+        } else if (EthereumTable.TRANSACTION.getName().equals(schemaTableName.getTableName())) {
+            builder.add(new ColumnMetadata("tx_hash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("tx_nonce", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("tx_blockHash", VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("tx_blockNumber", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("tx_transactionIndex", IntegerType.INTEGER));
+            builder.add(new ColumnMetadata("tx_from", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("tx_to", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
+            builder.add(new ColumnMetadata("tx_value", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("tx_gas", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("tx_gasPrice", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("tx_input", VarcharType.VARCHAR));
+        } else {
+            throw new IllegalArgumentException("Unknown Table Name " + schemaTableName.getTableName());
+        }
 
         return new ConnectorTableMetadata(schemaTableName, builder.build());
     }

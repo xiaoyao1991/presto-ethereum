@@ -12,9 +12,15 @@ public class EthereumSplit implements ConnectorSplit {
     private final long blockId;
     private final String blockHash;
 
+    private final EthereumTable table;
+
     @JsonCreator
-    public EthereumSplit(@JsonProperty("blockId") long blockId) {
+    public EthereumSplit(
+            @JsonProperty("blockId") long blockId,
+            @JsonProperty("table") EthereumTable table
+    ) {
         this.blockId = blockId;
+        this.table = table;
         this.blockHash = null;
     }
 
@@ -32,6 +38,11 @@ public class EthereumSplit implements ConnectorSplit {
     @JsonProperty
     public String getBlockHash() {
         return blockHash;
+    }
+
+    @JsonProperty
+    public EthereumTable getTable() {
+        return table;
     }
 
     @Override
