@@ -10,15 +10,15 @@ This is a Presto connector to the Ethereum blockchain data. With this connector,
 1. Have an Ethereum client([Geth](https://github.com/ethereum/go-ethereum), [Parity](https://github.com/paritytech/parity)) running locally. *TODO: Infura support coming soon*
 1. [Install Presto](https://prestodb.io/docs/current/installation/deployment.html). *Follow the instructions on that page to create relevant config files.*  
   By the end of this step, your presto installation folder structure should look like:
-  ```
-  ├── bin
-  ├── lib
-  ├── etc
-  │   ├── config.properties
-  │   ├── jvm.config
-  │   └── node.properties
-  ├── plugin
-  ```
+    ```
+    ├── bin
+    ├── lib
+    ├── etc
+    │   ├── config.properties
+    │   ├── jvm.config
+    │   └── node.properties
+    ├── plugin
+    ```
 1. [Install Presto CLI](https://prestodb.io/docs/current/installation/cli.html)
 1. Clone this repo and run `mvn clean package` to build the plugin. You will find the built plugin in the `target` folder.
 1. Load the plugin to Presto  
@@ -31,19 +31,19 @@ This is a Presto connector to the Ethereum blockchain data. With this connector,
       && tar xfz presto-ethereum-*-plugin.tar.gz -C plugin/ethereum --strip-components=1
     ```  
   By the end of this step, your presto installation folder structure should look like:  
-  ```
-  ├── bin
-  ├── lib
-  ├── etc
-  │   ├── catalog
-  │   │   └── ethereum.properties
-  │   ├── config.properties
-  │   ├── jvm.config
-  │   └── node.properties
-  ├── plugin
-  │   ├── ethereum
-  │   │   └── <some jars>
-  ```
+    ```
+    ├── bin
+    ├── lib
+    ├── etc
+    │   ├── catalog
+    │   │   └── ethereum.properties
+    │   ├── config.properties
+    │   ├── jvm.config
+    │   └── node.properties
+    ├── plugin
+    │   ├── ethereum
+    │   │   └── <some jars>
+    ```
 1. There you go. You can now start the presto server, and query through presto-cli:  
   ```
   $ bin/launcher start
