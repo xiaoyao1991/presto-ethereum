@@ -30,20 +30,21 @@ This is a Presto connector to the Ethereum blockchain data. With this connector,
       && cp <path_to_this_repo>/target/presto-ethereum-*-plugin.tar.gz . \
       && tar xfz presto-ethereum-*-plugin.tar.gz -C plugin/ethereum --strip-components=1
     ```  
-  By the end of this step, your presto installation folder structure should look like:  
-    ```
-    ├── bin
-    ├── lib
-    ├── etc
-    │   ├── catalog
-    │   │   └── ethereum.properties
-    │   ├── config.properties
-    │   ├── jvm.config
-    │   └── node.properties
-    ├── plugin
-    │   ├── ethereum
-    │   │   └── <some jars>
-    ```
+
+    By the end of this step, your presto installation folder structure should look like:  
+      ```
+      ├── bin
+      ├── lib
+      ├── etc
+      │   ├── catalog
+      │   │   └── ethereum.properties
+      │   ├── config.properties
+      │   ├── jvm.config
+      │   └── node.properties
+      ├── plugin
+      │   ├── ethereum
+      │   │   └── <some jars>
+      ```
 1. There you go. You can now start the presto server, and query through presto-cli:  
   ```
   $ bin/launcher start
