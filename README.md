@@ -6,8 +6,12 @@ Unleash the Power of Presto Interactive SQL Querying on Ethereum Blockchain
 
 This is a Presto connector to the Ethereum blockchain data. With this connector, one can get hands on with Ethereum blockchain analytics work without having to know how to play with the nitty gritty Javascript API.
 
+### Prerequisites
+Have an Ethereum client that you can connect to. There are 2 options:
+1. Run [Geth](https://github.com/ethereum/go-ethereum) or [Parity](https://github.com/paritytech/parity) locally.
+1. Use [Infura](https://infura.io), a hosted Ethereum client in the cloud.    
+
 ### Usage
-1. Have an Ethereum client([Geth](https://github.com/ethereum/go-ethereum), [Parity](https://github.com/paritytech/parity)) running locally. *TODO: Infura support coming soon*
 1. [Install Presto](https://prestodb.io/docs/current/installation/deployment.html). *Follow the instructions on that page to create relevant config files.*  
   By the end of this step, your presto installation folder structure should look like:
     ```
@@ -23,7 +27,20 @@ This is a Presto connector to the Ethereum blockchain data. With this connector,
 1. Clone this repo and run `mvn clean package` to build the plugin. You will find the built plugin in the `target` folder.
 1. Load the plugin to Presto  
   a. Create the ethereum connector config inside of `etc`.  
-    `$ mkdir -p etc/catalog && echo 'connector.name=ethereum' > etc/catalog/ethereum.properties`  
+    `$ mkdir -p etc/catalog && touch etc/catalog/ethereum.properties`   
+    Paste the following to the ethereum.properties:
+    ```
+     connector.name=ethereum
+     
+     # You can connect through Ethereum HTTP JSON RPC endpoint
+     ethereum.jsonrpc=http://localhost:8545/
+
+     # Or you can connect through IPC socket
+     # ethereum.ipc=/path/to/ipc_socketfile
+
+     # Or you can connect to Infura
+     # ethereum.infura=https://mainnet.infura.io/<your_token>
+    ```
   b. Copy and extract the built plugin to your presto plugin folder  
     ```
     $ mkdir -p plugin/ethereum \
