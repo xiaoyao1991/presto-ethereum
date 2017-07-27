@@ -30,16 +30,16 @@ Have an Ethereum client that you can connect to. There are 2 options:
     `$ mkdir -p etc/catalog && touch etc/catalog/ethereum.properties`   
     Paste the following to the ethereum.properties:
     ```
-     connector.name=ethereum
-     
-     # You can connect through Ethereum HTTP JSON RPC endpoint
-     ethereum.jsonrpc=http://localhost:8545/
+    connector.name=ethereum
 
-     # Or you can connect through IPC socket
-     # ethereum.ipc=/path/to/ipc_socketfile
+    # You can connect through Ethereum HTTP JSON RPC endpoint
+    ethereum.jsonrpc=http://localhost:8545/
 
-     # Or you can connect to Infura
-     # ethereum.infura=https://mainnet.infura.io/<your_token>
+    # Or you can connect through IPC socket
+    # ethereum.ipc=/path/to/ipc_socketfile
+
+    # Or you can connect to Infura
+    # ethereum.infura=https://mainnet.infura.io/<your_token>
     ```
   b. Copy and extract the built plugin to your presto plugin folder  
     ```
