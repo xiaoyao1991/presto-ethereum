@@ -26,7 +26,7 @@ Have an Ethereum client that you can connect to. There are 2 options:
 1. [Install Presto CLI](https://prestodb.io/docs/current/installation/cli.html)
 1. Clone this repo and run `mvn clean package` to build the plugin. You will find the built plugin in the `target` folder.
 1. Load the plugin to Presto  
-  a. Create the ethereum connector config inside of `etc`.  
+    a. Create the ethereum connector config inside of `etc`.  
     `$ mkdir -p etc/catalog && touch etc/catalog/ethereum.properties`   
     Paste the following to the ethereum.properties:
     ```
@@ -41,7 +41,7 @@ Have an Ethereum client that you can connect to. There are 2 options:
     # Or you can connect to Infura
     # ethereum.infura=https://mainnet.infura.io/<your_token>
     ```
-  b. Copy and extract the built plugin to your presto plugin folder  
+    b. Copy and extract the built plugin to your presto plugin folder  
     ```
     $ mkdir -p plugin/ethereum \
       && cp <path_to_this_repo>/target/presto-ethereum-*-plugin.tar.gz . \
