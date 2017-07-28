@@ -68,18 +68,49 @@ Have an Ethereum client that you can connect to. There are 2 options:
   $ presto-cli --server localhost:8080 --catalog ethereum --schema default
   ```
 
-### Demo
-Showing all the tables available
-![showtables](docs/showtables.gif)
+### Use Cases
+Inspired by [An Analysis of the First 100000 Blocks](https://blog.ethereum.org/2015/08/18/frontier-first-100k-blocks/), the following SQL queries capture partially what was depicted in that post.  
 
-Schema of the `block` table
-![describeblock](docs/describeblock.gif)
-
-Schema of the `transaction` table
-![describetx](docs/describetx.gif)
-
-Get the top miners based on blocks mined within a block range
-![topminers](docs/topminers.gif)
-
-Get the top accounts based on values going out within a block range
-![richest](docs/richest.gif)
+- The first 50 block times (in seconds)
+```sql
+SELECT b.bn, (b.block_timestamp - a.block_timestamp) AS delta
+FROM
+    (SELECT block_number AS bn, block_timestamp
+    FROM block
+    WHERE block_number>=1 AND block_number<=50) AS a
+JOIN
+    (SELECT (block_number-1) AS bn, block_timestamp
+    FROM block
+    WHERE block_number>=2 AND block_number<=51) AS b
+ON a.bn=b.bn
+ORDER BY b.bn;
+```
+- Average block time (every 200th block from genesis to block 10000)
+```sql
+WITH
+X AS (SELECT b.bn, (b.block_timestamp - a.block_timestamp) AS delta
+        FROM
+            (SELECT block_number AS bn, block_timestamp
+            FROM block
+            WHERE block_number>=1 AND block_number<=10000) AS a
+        JOIN
+            (SELECT (block_number-1) AS bn, block_timestamp
+            FROM block
+            WHERE block_number>=2 AND block_number<=10001) AS b
+        ON a.bn=b.bn
+        ORDER BY b.bn)
+SELECT min(bn) AS chunkStart, avg(delta)
+FROM
+    (SELECT ntile(10000/200) OVER (ORDER BY bn) AS chunk, * FROM X) AS T
+GROUP BY chunk
+ORDER BY chunkStart;
+```
+- Biggest miners in first 100k blocks (address, blocks, %)
+```sql
+SELECT block_miner, count(*) AS num, count(*)/100000.0 AS PERCENT
+FROM block
+WHERE block_number<=100000
+GROUP BY block_miner
+ORDER BY num DESC
+LIMIT 15;
+```

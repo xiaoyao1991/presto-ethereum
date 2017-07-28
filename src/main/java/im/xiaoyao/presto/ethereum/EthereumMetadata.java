@@ -57,7 +57,6 @@ public class EthereumMetadata implements ConnectorMetadata {
 
     @Override
     public List<String> listSchemaNames(ConnectorSession session) {
-//        return Arrays.stream(EthereumSchema.values()).map(EthereumSchema::getName).collect(Collectors.toList());
         return Collections.singletonList(DEFAULT_SCHEMA);
     }
 
