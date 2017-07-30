@@ -114,3 +114,12 @@ GROUP BY block_miner
 ORDER BY num DESC
 LIMIT 15;
 ```
+
+### Web3 Functions
+In addition to the various built-in [Presto functions](https://prestodb.io/docs/current/functions.html), some web3 functions are ported so that they can be called inline with SQL statements directly. Currently, the supported web3 functions are
+1. [fromWei](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3fromwei)
+1. [toWei](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3towei)
+1. [eth_gasPrice](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgasprice)
+1. [eth_blockNumber](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethblocknumber)
+1. [eth_getBalance](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgetbalance)
+1. [eth_getTransactionCount](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgettransactioncount)
