@@ -18,6 +18,7 @@ import com.facebook.presto.spi.predicate.Range;
 import com.facebook.presto.spi.predicate.Ranges;
 import com.facebook.presto.spi.type.ArrayType;
 import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.DoubleType;
 import com.facebook.presto.spi.type.IntegerType;
 import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
@@ -105,8 +106,8 @@ public class EthereumMetadata implements ConnectorMetadata {
             columnHandles.put("block_totalDifficulty", new EthereumColumnHandle(connectorId, index++, "block_totalDifficulty", BigintType.BIGINT));
             columnHandles.put("block_size", new EthereumColumnHandle(connectorId, index++, "block_size", IntegerType.INTEGER));
             columnHandles.put("block_extraData", new EthereumColumnHandle(connectorId, index++, "block_extraData", VarcharType.VARCHAR));
-            columnHandles.put("block_gasLimit", new EthereumColumnHandle(connectorId, index++, "block_gasLimit", BigintType.BIGINT));
-            columnHandles.put("block_gasUsed", new EthereumColumnHandle(connectorId, index++, "block_gasUsed", BigintType.BIGINT));
+            columnHandles.put("block_gasLimit", new EthereumColumnHandle(connectorId, index++, "block_gasLimit", DoubleType.DOUBLE));
+            columnHandles.put("block_gasUsed", new EthereumColumnHandle(connectorId, index++, "block_gasUsed", DoubleType.DOUBLE));
             columnHandles.put("block_timestamp", new EthereumColumnHandle(connectorId, index++, "block_timestamp", BigintType.BIGINT));
             columnHandles.put("block_transactions", new EthereumColumnHandle(connectorId, index++, "block_transactions", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
             columnHandles.put("block_uncles", new EthereumColumnHandle(connectorId, index++, "block_uncles", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
@@ -118,9 +119,9 @@ public class EthereumMetadata implements ConnectorMetadata {
             columnHandles.put("tx_transactionIndex", new EthereumColumnHandle(connectorId, index++, "tx_transactionIndex", IntegerType.INTEGER));
             columnHandles.put("tx_from", new EthereumColumnHandle(connectorId, index++, "tx_from", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
             columnHandles.put("tx_to", new EthereumColumnHandle(connectorId, index++, "tx_to", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
-            columnHandles.put("tx_value", new EthereumColumnHandle(connectorId, index++, "tx_value", BigintType.BIGINT));
-            columnHandles.put("tx_gas", new EthereumColumnHandle(connectorId, index++, "tx_gas", BigintType.BIGINT));
-            columnHandles.put("tx_gasPrice", new EthereumColumnHandle(connectorId, index++, "tx_gasPrice", BigintType.BIGINT));
+            columnHandles.put("tx_value", new EthereumColumnHandle(connectorId, index++, "tx_value", DoubleType.DOUBLE));
+            columnHandles.put("tx_gas", new EthereumColumnHandle(connectorId, index++, "tx_gas", DoubleType.DOUBLE));
+            columnHandles.put("tx_gasPrice", new EthereumColumnHandle(connectorId, index++, "tx_gasPrice", DoubleType.DOUBLE));
             columnHandles.put("tx_input", new EthereumColumnHandle(connectorId, index++, "tx_input", VarcharType.VARCHAR));
         } else {
             throw new IllegalArgumentException("Unknown Table Name " + tableName);
@@ -215,8 +216,8 @@ public class EthereumMetadata implements ConnectorMetadata {
             builder.add(new ColumnMetadata("block_totalDifficulty", BigintType.BIGINT));
             builder.add(new ColumnMetadata("block_size", IntegerType.INTEGER));
             builder.add(new ColumnMetadata("block_extraData", VarcharType.VARCHAR));
-            builder.add(new ColumnMetadata("block_gasLimit", BigintType.BIGINT));
-            builder.add(new ColumnMetadata("block_gasUsed", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("block_gasLimit", DoubleType.DOUBLE));
+            builder.add(new ColumnMetadata("block_gasUsed", DoubleType.DOUBLE));
             builder.add(new ColumnMetadata("block_timestamp", BigintType.BIGINT));
             builder.add(new ColumnMetadata("block_transactions", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
             builder.add(new ColumnMetadata("block_uncles", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
@@ -228,9 +229,9 @@ public class EthereumMetadata implements ConnectorMetadata {
             builder.add(new ColumnMetadata("tx_transactionIndex", IntegerType.INTEGER));
             builder.add(new ColumnMetadata("tx_from", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
             builder.add(new ColumnMetadata("tx_to", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
-            builder.add(new ColumnMetadata("tx_value", BigintType.BIGINT));
-            builder.add(new ColumnMetadata("tx_gas", BigintType.BIGINT));
-            builder.add(new ColumnMetadata("tx_gasPrice", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("tx_value", DoubleType.DOUBLE));
+            builder.add(new ColumnMetadata("tx_gas", DoubleType.DOUBLE));
+            builder.add(new ColumnMetadata("tx_gasPrice", DoubleType.DOUBLE));
             builder.add(new ColumnMetadata("tx_input", VarcharType.VARCHAR));
         } else {
             throw new IllegalArgumentException("Unknown Table Name " + schemaTableName.getTableName());

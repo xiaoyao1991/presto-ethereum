@@ -59,9 +59,9 @@ public class EthereumUDFs {
 
     @ScalarFunction("eth_gasPrice")
     @Description("Returns current gas price")
-    @SqlType(StandardTypes.BIGINT)
-    public static long ethGasPrice() throws IOException {
-        return web3j.ethGasPrice().send().getGasPrice().longValue();
+    @SqlType(StandardTypes.DOUBLE)
+    public static double ethGasPrice() throws IOException {
+        return web3j.ethGasPrice().send().getGasPrice().doubleValue();
     }
 
     @ScalarFunction("eth_blockNumber")
@@ -73,23 +73,23 @@ public class EthereumUDFs {
 
     @ScalarFunction("eth_getBalance")
     @Description("Returns the balance of an address")
-    @SqlType(StandardTypes.BIGINT)
-    public static long ethGetBalance(@SqlType(StandardTypes.VARCHAR) Slice address) throws IOException {
-        return web3j.ethGetBalance(address.toStringUtf8(), DefaultBlockParameter.valueOf(LATEST)).send().getBalance().longValue();
+    @SqlType(StandardTypes.DOUBLE)
+    public static double ethGetBalance(@SqlType(StandardTypes.VARCHAR) Slice address) throws IOException {
+        return web3j.ethGetBalance(address.toStringUtf8(), DefaultBlockParameter.valueOf(LATEST)).send().getBalance().doubleValue();
     }
 
     @ScalarFunction("eth_getBalance")
     @Description("Returns the balance of an address")
-    @SqlType(StandardTypes.BIGINT)
-    public static long ethGetBalance(@SqlType(StandardTypes.VARCHAR) Slice address, @SqlType(StandardTypes.BIGINT) long blockNumber) throws IOException {
-        return web3j.ethGetBalance(address.toStringUtf8(), DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber))).send().getBalance().longValue();
+    @SqlType(StandardTypes.DOUBLE)
+    public static double ethGetBalance(@SqlType(StandardTypes.VARCHAR) Slice address, @SqlType(StandardTypes.BIGINT) long blockNumber) throws IOException {
+        return web3j.ethGetBalance(address.toStringUtf8(), DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber))).send().getBalance().doubleValue();
     }
 
     @ScalarFunction("eth_getBalance")
     @Description("Returns the balance of an address")
-    @SqlType(StandardTypes.BIGINT)
-    public static long ethGetBalance(@SqlType(StandardTypes.VARCHAR) Slice address, @SqlType(StandardTypes.VARCHAR) Slice blockName) throws IOException {
-        return web3j.ethGetBalance(address.toStringUtf8(), DefaultBlockParameter.valueOf(blockName.toStringUtf8())).send().getBalance().longValue();
+    @SqlType(StandardTypes.DOUBLE)
+    public static double ethGetBalance(@SqlType(StandardTypes.VARCHAR) Slice address, @SqlType(StandardTypes.VARCHAR) Slice blockName) throws IOException {
+        return web3j.ethGetBalance(address.toStringUtf8(), DefaultBlockParameter.valueOf(blockName.toStringUtf8())).send().getBalance().doubleValue();
     }
 
     @ScalarFunction("eth_getTransactionCount")
@@ -111,5 +111,23 @@ public class EthereumUDFs {
     @SqlType(StandardTypes.BIGINT)
     public static long ethGetTransactionCount(@SqlType(StandardTypes.VARCHAR) Slice address, @SqlType(StandardTypes.VARCHAR) Slice blockName) throws IOException {
         return web3j.ethGetTransactionCount(address.toStringUtf8(), DefaultBlockParameter.valueOf(blockName.toStringUtf8())).send().getTransactionCount().longValue();
+    }
+
+    @ScalarFunction("fromWei")
+    @Description("fromWei")
+    @SqlType(StandardTypes.DOUBLE)
+    public static double fromWei(@SqlType(StandardTypes.DOUBLE) double num, @SqlType(StandardTypes.VARCHAR) Slice unit) {
+        String unitStr = unit.toStringUtf8().toUpperCase();
+        EthereumUnit u = EthereumUnit.valueOf(unitStr);
+        return u.fromWei(num);
+    }
+
+    @ScalarFunction("toWei")
+    @Description("toWei")
+    @SqlType(StandardTypes.DOUBLE)
+    public static double toWei(@SqlType(StandardTypes.DOUBLE) double num, @SqlType(StandardTypes.VARCHAR) Slice unit) {
+        String unitStr = unit.toStringUtf8().toUpperCase();
+        EthereumUnit u = EthereumUnit.valueOf(unitStr);
+        return u.toWei(num);
     }
 }
