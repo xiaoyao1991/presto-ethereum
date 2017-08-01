@@ -24,6 +24,7 @@ import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.log.Logger;
+import org.web3j.protocol.Web3j;
 
 import javax.inject.Inject;
 import java.util.Collections;
@@ -46,14 +47,15 @@ public class EthereumMetadata implements ConnectorMetadata {
     private static final int H20_BYTE_HASH_STRING_LENGTH = 2 + 20 * 2;
 
     private final String connectorId;
+    private final Web3j web3j;
 
     @Inject
     public EthereumMetadata(
             EthereumConnectorId connectorId,
-            EthereumConnectorConfig config
+            EthereumWeb3jProvider provider
     ) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
-        requireNonNull(config, "config is null");
+        this.web3j = requireNonNull(provider, "provider is null").getWeb3j();
     }
 
     @Override
@@ -180,9 +182,15 @@ public class EthereumMetadata implements ConnectorMetadata {
                     for (Range r : orderedRanges) {
                         Marker low = r.getLow();
                         Marker high = r.getHigh();
-                        builder.add(new EthereumBlockRange(low.isLowerUnbounded() ? 1L : (Long) low.getValue(),
-                                high.isUpperUnbounded() ? -1 : (Long) high.getValue()));
+                        builder.add(new EthereumBlockRange(low, high));
                     }
+                } else if (entry.getKey() instanceof EthereumColumnHandle
+                        && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_hash")
+                        || ((EthereumColumnHandle) entry.getKey()).getName().equals("tx_blockHash"))) {
+                    web3j.ethGetBlockByHash(entry.getValue().getValues(), true);
+                } else if (entry.getKey() instanceof EthereumColumnHandle
+                        && ((EthereumColumnHandle) entry.getKey()).getName().equals("block_parentHash")) {
+
                 }
             }
         }
