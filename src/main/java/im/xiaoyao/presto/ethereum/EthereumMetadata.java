@@ -18,15 +18,19 @@ import com.facebook.presto.spi.predicate.Range;
 import com.facebook.presto.spi.predicate.Ranges;
 import com.facebook.presto.spi.type.ArrayType;
 import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.CharType;
 import com.facebook.presto.spi.type.DoubleType;
 import com.facebook.presto.spi.type.IntegerType;
 import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.log.Logger;
+import io.airlift.slice.Slice;
 import org.web3j.protocol.Web3j;
 
 import javax.inject.Inject;
+
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -182,15 +186,24 @@ public class EthereumMetadata implements ConnectorMetadata {
                     for (Range r : orderedRanges) {
                         Marker low = r.getLow();
                         Marker high = r.getHigh();
-                        builder.add(new EthereumBlockRange(low, high));
+                        builder.add(EthereumBlockRange.fromMarkers(low, high));
                     }
                 } else if (entry.getKey() instanceof EthereumColumnHandle
                         && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_hash")
                         || ((EthereumColumnHandle) entry.getKey()).getName().equals("tx_blockHash"))) {
-                    web3j.ethGetBlockByHash(entry.getValue().getValues(), true);
-                } else if (entry.getKey() instanceof EthereumColumnHandle
-                        && ((EthereumColumnHandle) entry.getKey()).getName().equals("block_parentHash")) {
-
+                    Ranges ranges = entry.getValue().getValues().getRanges();
+                    List<Range> orderedRanges = ranges.getOrderedRanges();
+                    orderedRanges.stream().filter(Range::isSingleValue).forEach(r -> {
+                        String blockHash = ((Slice) r.getSingleValue()).toStringUtf8();
+                        try {
+                            long blockNumber = web3j.ethGetBlockByHash(blockHash, true).send().getBlock().getNumber().longValue();
+                            builder.add(new EthereumBlockRange(blockNumber, blockNumber));
+                        }
+                        catch (IOException e) {
+                            throw new IllegalStateException("Unable to getting block by hash " + blockHash);
+                        }
+                    });
+                    log.info(entry.getValue().getValues().toString(null));
                 }
             }
         }
