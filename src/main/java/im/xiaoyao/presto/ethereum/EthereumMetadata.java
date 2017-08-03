@@ -15,10 +15,8 @@ import com.facebook.presto.spi.connector.ConnectorMetadata;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker;
 import com.facebook.presto.spi.predicate.Range;
-import com.facebook.presto.spi.predicate.Ranges;
 import com.facebook.presto.spi.type.ArrayType;
 import com.facebook.presto.spi.type.BigintType;
-import com.facebook.presto.spi.type.CharType;
 import com.facebook.presto.spi.type.DoubleType;
 import com.facebook.presto.spi.type.IntegerType;
 import com.facebook.presto.spi.type.VarcharType;
@@ -27,10 +25,12 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameter;
 
 import javax.inject.Inject;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -181,26 +181,38 @@ public class EthereumMetadata implements ConnectorMetadata {
                 if (entry.getKey() instanceof EthereumColumnHandle
                         && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_number")
                         || ((EthereumColumnHandle) entry.getKey()).getName().equals("tx_blockNumber"))) {
-                    Ranges ranges = entry.getValue().getValues().getRanges();
-                    List<Range> orderedRanges = ranges.getOrderedRanges();
-                    for (Range r : orderedRanges) {
+                    entry.getValue().getValues().getRanges().getOrderedRanges().forEach(r -> {
                         Marker low = r.getLow();
                         Marker high = r.getHigh();
                         builder.add(EthereumBlockRange.fromMarkers(low, high));
-                    }
+                    });
                 } else if (entry.getKey() instanceof EthereumColumnHandle
                         && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_hash")
                         || ((EthereumColumnHandle) entry.getKey()).getName().equals("tx_blockHash"))) {
-                    Ranges ranges = entry.getValue().getValues().getRanges();
-                    List<Range> orderedRanges = ranges.getOrderedRanges();
-                    orderedRanges.stream().filter(Range::isSingleValue).forEach(r -> {
-                        String blockHash = ((Slice) r.getSingleValue()).toStringUtf8();
+                    entry.getValue().getValues().getRanges().getOrderedRanges().stream()
+                            .filter(Range::isSingleValue).forEach(r -> {
+                                String blockHash = ((Slice) r.getSingleValue()).toStringUtf8();
+                                try {
+                                    long blockNumber = web3j.ethGetBlockByHash(blockHash, true).send().getBlock().getNumber().longValue();
+                                    builder.add(new EthereumBlockRange(blockNumber, blockNumber));
+                                }
+                                catch (IOException e) {
+                                    throw new IllegalStateException("Unable to getting block by hash " + blockHash);
+                                }
+                            });
+                    log.info(entry.getValue().getValues().toString(null));
+                } else if (entry.getKey() instanceof EthereumColumnHandle
+                        && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_timestamp"))) {
+                    entry.getValue().getValues().getRanges().getOrderedRanges().forEach(r -> {
+                        Marker low = r.getLow();
+                        Marker high = r.getHigh();
                         try {
-                            long blockNumber = web3j.ethGetBlockByHash(blockHash, true).send().getBlock().getNumber().longValue();
-                            builder.add(new EthereumBlockRange(blockNumber, blockNumber));
+                            long startBlock = low.isLowerUnbounded() ? 1L : findBlockByTimestamp((Long) low.getValue(), -1L);
+                            long endBlock = high.isUpperUnbounded() ? -1L : findBlockByTimestamp((Long) high.getValue(), 1L);
+                            builder.add(new EthereumBlockRange(startBlock, endBlock));
                         }
                         catch (IOException e) {
-                            throw new IllegalStateException("Unable to getting block by hash " + blockHash);
+                            throw new IllegalStateException("Unable to find block by timestamp");
                         }
                     });
                     log.info(entry.getValue().getValues().toString(null));
@@ -219,8 +231,7 @@ public class EthereumMetadata implements ConnectorMetadata {
     }
 
     @SuppressWarnings("ValueOfIncrementOrDecrementUsed")
-    private ConnectorTableMetadata getTableMetadata(SchemaTableName schemaTableName)
-    {
+    private ConnectorTableMetadata getTableMetadata(SchemaTableName schemaTableName) {
         ImmutableList.Builder<ColumnMetadata> builder = ImmutableList.builder();
 
         if (EthereumTable.BLOCK.getName().equals(schemaTableName.getTableName())) {
@@ -259,5 +270,32 @@ public class EthereumMetadata implements ConnectorMetadata {
         }
 
         return new ConnectorTableMetadata(schemaTableName, builder.build());
+    }
+
+    private long findBlockByTimestamp(long timestamp, long offset) throws IOException {
+        long startBlock = 1L;
+        long currentBlock = web3j.ethBlockNumber().send().getBlockNumber().longValue();
+
+        if (currentBlock <= 1) {
+            return currentBlock;
+        }
+
+        long low = startBlock;
+        long high = currentBlock;
+        long middle = low + (high - low) / 2;
+
+        while(low <= high) {
+            middle = low + (high - low) / 2;
+            long ts = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(BigInteger.valueOf(middle)), false).send().getBlock().getTimestamp().longValue();
+
+            if (ts < timestamp) {
+                low = middle + 1;
+            } else if (ts > timestamp) {
+                high = middle - 1;
+            } else {
+                return middle;
+            }
+        }
+        return middle + offset;
     }
 }
