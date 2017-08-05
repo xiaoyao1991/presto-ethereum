@@ -4,7 +4,6 @@ import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.ConnectorSplitSource;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
-import com.facebook.presto.spi.FixedSplitSource;
 import com.facebook.presto.spi.connector.ConnectorSplitManager;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import com.google.common.collect.ImmutableList;
@@ -13,7 +12,6 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.EthBlockNumber;
 
 import javax.inject.Inject;
-
 import java.io.IOException;
 
 import static im.xiaoyao.presto.ethereum.EthereumHandleResolver.convertLayout;
@@ -24,16 +22,19 @@ public class EthereumSplitManager implements ConnectorSplitManager {
 
     private final String connectorId;
     private final Web3j web3j;
+    private final EthereumSplitSourceManager ssMgr;
 
     @Inject
     public EthereumSplitManager(
             EthereumConnectorId connectorId,
             EthereumConnectorConfig config,
-            EthereumWeb3jProvider web3jProvider
+            EthereumWeb3jProvider web3jProvider,
+            EthereumSplitSourceManager ssMgr
     ) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
         requireNonNull(web3jProvider, "web3j is null");
         requireNonNull(config, "config is null");
+        this.ssMgr = requireNonNull(ssMgr, "ssMgr is null");
         this.web3j = web3jProvider.getWeb3j();
     }
 
@@ -68,7 +69,10 @@ public class EthereumSplitManager implements ConnectorSplitManager {
 
             ImmutableList<ConnectorSplit> connectorSplits = splits.build();
             log.info("Built %d splits", connectorSplits.size());
-            return new FixedSplitSource(connectorSplits);
+//            return new FixedSplitSource(connectorSplits);
+            return ssMgr.put(session.getQueryId(), connectorSplits);
+
+//            return ssMgr.get(session.getQueryId());
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Cannot get block number: ", e);

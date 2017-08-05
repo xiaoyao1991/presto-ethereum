@@ -25,7 +25,7 @@ public class EthereumConnectorModule implements Module {
         binder.bind(EthereumConnector.class).in(Scopes.SINGLETON);
         binder.bind(EthereumMetadata.class).in(Scopes.SINGLETON);
         binder.bind(EthereumWeb3jProvider.class).in(Scopes.SINGLETON);
-
+        binder.bind(EthereumSplitSourceManager.class).in(Scopes.SINGLETON);
         binder.bind(EthereumSplitManager.class).in(Scopes.SINGLETON);
         binder.bind(EthereumRecordSetProvider.class).in(Scopes.SINGLETON);
 

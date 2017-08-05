@@ -52,14 +52,17 @@ public class EthereumMetadata implements ConnectorMetadata {
 
     private final String connectorId;
     private final Web3j web3j;
+    private final EthereumSplitSourceManager ssMgr;
 
     @Inject
     public EthereumMetadata(
             EthereumConnectorId connectorId,
-            EthereumWeb3jProvider provider
+            EthereumWeb3jProvider provider,
+            EthereumSplitSourceManager ssMgr
     ) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
         this.web3j = requireNonNull(provider, "provider is null").getWeb3j();
+        this.ssMgr = requireNonNull(ssMgr, "ssMgr is null");
     }
 
     @Override
@@ -297,5 +300,16 @@ public class EthereumMetadata implements ConnectorMetadata {
             }
         }
         return middle + offset;
+    }
+
+    @Override
+    public void beginQuery(ConnectorSession session) {
+        log.info("========= Begin Query %s", session.getQueryId());
+    }
+
+    @Override
+    public void cleanupQuery(ConnectorSession session) {
+        log.info("========= End Query %s", session.getQueryId());
+        ssMgr.removeSource(session.getQueryId());
     }
 }

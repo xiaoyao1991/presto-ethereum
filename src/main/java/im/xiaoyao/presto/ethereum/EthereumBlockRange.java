@@ -3,7 +3,9 @@ package im.xiaoyao.presto.ethereum;
 import com.facebook.presto.spi.predicate.Marker;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.ToString;
 
+@ToString
 public class EthereumBlockRange {
     private final long startBlock;
     private final long endBlock;
@@ -55,5 +57,9 @@ public class EthereumBlockRange {
     @JsonProperty
     public long getEndBlock() {
         return endBlock;
+    }
+
+    public long getRangeSize() {
+        return endBlock - startBlock;
     }
 }

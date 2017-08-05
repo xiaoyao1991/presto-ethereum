@@ -8,6 +8,7 @@ import com.facebook.presto.spi.block.InterleavedBlockBuilder;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
+import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 import org.joda.time.DateTimeZone;
@@ -41,6 +42,8 @@ import static java.lang.Float.floatToRawIntBits;
 import static java.util.Objects.requireNonNull;
 
 public class EthereumRecordCursor implements RecordCursor {
+    private static final Logger log = Logger.get(EthereumRecordCursor.class);
+
     private final EthBlock block;
     private final Iterator<EthBlock> blockIter;
     private final Iterator<EthBlock.TransactionResult> txIter;
@@ -164,6 +167,7 @@ public class EthereumRecordCursor implements RecordCursor {
 
     @Override
     public Slice getSlice(int field) {
+        log.info("%d, %d, %s", field, fieldToColumnIndex[field], suppliers.get(fieldToColumnIndex[field]).get().toString());
         return Slices.utf8Slice((String) suppliers.get(fieldToColumnIndex[field]).get());
     }
 
