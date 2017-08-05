@@ -15,6 +15,7 @@
         <version.guice>4.0</version.guice>
         <version.airlift>0.148</version.airlift>
         <version.lombok>1.16.18</version.lombok>
+        <version.mapdb>3.0.5</version.mapdb>
     </properties>
 
     <dependencies>
@@ -65,6 +66,12 @@
             <groupId>io.airlift</groupId>
             <artifactId>json</artifactId>
             <version>${version.airlift}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapdb</groupId>
+            <artifactId>mapdb</artifactId>
+            <version>${version.mapdb}</version>
         </dependency>
 
         <dependency>
