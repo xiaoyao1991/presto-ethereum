@@ -9,6 +9,7 @@ import javax.inject.Inject;
 
 public class EthereumWeb3jProvider {
     private final Web3j web3j;
+    private final CachedWeb3j cachedWeb3j;
 
     @Inject
     public EthereumWeb3jProvider(EthereumConnectorConfig config) {
@@ -31,9 +32,14 @@ public class EthereumWeb3jProvider {
         } else {
             throw new IllegalArgumentException("More than 1 Ethereum service providers found");
         }
+        this.cachedWeb3j = new CachedWeb3j(this.web3j);
     }
 
     public Web3j getWeb3j() {
         return web3j;
+    }
+
+    public CachedWeb3j getCachedWeb3j() {
+        return cachedWeb3j;
     }
 }

@@ -44,8 +44,8 @@ import static java.util.Objects.requireNonNull;
 public class EthereumRecordCursor implements RecordCursor {
     private static final Logger log = Logger.get(EthereumRecordCursor.class);
 
-    private final EthBlock block;
-    private final Iterator<EthBlock> blockIter;
+    private final EthBlock.Block block;
+    private final Iterator<EthBlock.Block> blockIter;
     private final Iterator<EthBlock.TransactionResult> txIter;
 
     private final EthereumTable table;
@@ -55,7 +55,7 @@ public class EthereumRecordCursor implements RecordCursor {
 
     private List<Supplier> suppliers;
 
-    public EthereumRecordCursor(List<EthereumColumnHandle> columnHandles, EthBlock block, EthereumTable table) {
+    public EthereumRecordCursor(List<EthereumColumnHandle> columnHandles, EthBlock.Block block, EthereumTable table) {
         this.columnHandles = columnHandles;
         this.table = table;
 
@@ -68,17 +68,17 @@ public class EthereumRecordCursor implements RecordCursor {
         // TODO: handle failure upstream
         this.block = requireNonNull(block, "block is null");
         this.blockIter = ImmutableList.of(block).iterator();
-        this.txIter = block.getBlock().getTransactions().iterator();
+        this.txIter = block.getTransactions().iterator();
     }
 
     @Override
     public long getTotalBytes() {
-        return block.getBlock().getSize().longValue();
+        return block.getSize().longValue();
     }
 
     @Override
     public long getCompletedBytes() {
-        return block.getBlock().getSize().longValue();
+        return block.getSize().longValue();
     }
 
     @Override
@@ -102,30 +102,29 @@ public class EthereumRecordCursor implements RecordCursor {
         ImmutableList.Builder<Supplier> builder = ImmutableList.builder();
         if (table == EthereumTable.BLOCK) {
             blockIter.next();
-            EthBlock.Block blockBlock = this.block.getBlock();
-            builder.add(blockBlock::getNumber);
-            builder.add(blockBlock::getHash);
-            builder.add(blockBlock::getParentHash);
-            builder.add(blockBlock::getNonceRaw);
-            builder.add(blockBlock::getSha3Uncles);
-            builder.add(blockBlock::getLogsBloom);
-            builder.add(blockBlock::getTransactionsRoot);
-            builder.add(blockBlock::getStateRoot);
-            builder.add(blockBlock::getMiner);
-            builder.add(blockBlock::getDifficulty);
-            builder.add(blockBlock::getTotalDifficulty);
-            builder.add(blockBlock::getSize);
-            builder.add(blockBlock::getExtraData);
-            builder.add(blockBlock::getGasLimit);
-            builder.add(blockBlock::getGasUsed);
-            builder.add(blockBlock::getTimestamp);
+            builder.add(this.block::getNumber);
+            builder.add(this.block::getHash);
+            builder.add(this.block::getParentHash);
+            builder.add(this.block::getNonceRaw);
+            builder.add(this.block::getSha3Uncles);
+            builder.add(this.block::getLogsBloom);
+            builder.add(this.block::getTransactionsRoot);
+            builder.add(this.block::getStateRoot);
+            builder.add(this.block::getMiner);
+            builder.add(this.block::getDifficulty);
+            builder.add(this.block::getTotalDifficulty);
+            builder.add(this.block::getSize);
+            builder.add(this.block::getExtraData);
+            builder.add(this.block::getGasLimit);
+            builder.add(this.block::getGasUsed);
+            builder.add(this.block::getTimestamp);
             builder.add(() -> {
-                return blockBlock.getTransactions()
+                return this.block.getTransactions()
                         .stream()
                         .map(tr -> ((EthBlock.TransactionObject) tr.get()).getHash())
                         .collect(Collectors.toList());
             });
-            builder.add(blockBlock::getUncles);
+            builder.add(this.block::getUncles);
 
         } else if (table == EthereumTable.TRANSACTION) {
             EthBlock.TransactionResult tr = txIter.next();

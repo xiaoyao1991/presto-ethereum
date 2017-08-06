@@ -28,6 +28,7 @@ public class CachedWeb3j {
 
         EthBlock.Block block = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber)), true)
                 .send().getBlock();
+        cache.put(blockNumber, block);
         return block;
     }
 }

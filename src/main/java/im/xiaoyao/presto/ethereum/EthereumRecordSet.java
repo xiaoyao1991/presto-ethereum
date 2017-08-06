@@ -6,11 +6,9 @@ import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
 import io.airlift.log.Logger;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.response.EthBlock;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -20,13 +18,15 @@ public class EthereumRecordSet implements RecordSet {
 
     private final EthereumSplit split;
     private final Web3j web3j;
+    private final CachedWeb3j cachedWeb3j;
 
     private final List<EthereumColumnHandle> columnHandles;
     private final List<Type> columnTypes;
 
-    EthereumRecordSet(Web3j web3j, List<EthereumColumnHandle> columnHandles, EthereumSplit split) {
+    EthereumRecordSet(Web3j web3j, CachedWeb3j cachedWeb3j, List<EthereumColumnHandle> columnHandles, EthereumSplit split) {
         this.split = requireNonNull(split, "split is null");
         this.web3j = requireNonNull(web3j, "web3j is null");
+        this.cachedWeb3j = requireNonNull(cachedWeb3j, "web3j is null");
 
         this.columnHandles = requireNonNull(columnHandles, "columnHandles is null");
 
@@ -46,9 +46,9 @@ public class EthereumRecordSet implements RecordSet {
 
     @Override
     public RecordCursor cursor() {
-        EthBlock block = null;
+        EthBlock.Block block = null;
         try {
-            block = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(BigInteger.valueOf(split.getBlockId())), true).send();
+            block = cachedWeb3j.ethGetBlockByNumber(split.getBlockId());
         } catch (IOException e) {
             e.printStackTrace();
         }

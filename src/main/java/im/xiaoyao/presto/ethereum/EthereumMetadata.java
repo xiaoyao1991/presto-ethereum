@@ -25,12 +25,9 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.DefaultBlockParameter;
 
 import javax.inject.Inject;
-
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +49,7 @@ public class EthereumMetadata implements ConnectorMetadata {
 
     private final String connectorId;
     private final Web3j web3j;
+    private final CachedWeb3j cachedWeb3j;
     private final EthereumSplitSourceManager ssMgr;
 
     @Inject
@@ -62,6 +60,7 @@ public class EthereumMetadata implements ConnectorMetadata {
     ) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
         this.web3j = requireNonNull(provider, "provider is null").getWeb3j();
+        this.cachedWeb3j = requireNonNull(provider, "provider is null").getCachedWeb3j();
         this.ssMgr = requireNonNull(ssMgr, "ssMgr is null");
     }
 
@@ -289,7 +288,7 @@ public class EthereumMetadata implements ConnectorMetadata {
 
         while(low <= high) {
             middle = low + (high - low) / 2;
-            long ts = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(BigInteger.valueOf(middle)), false).send().getBlock().getTimestamp().longValue();
+            long ts = cachedWeb3j.ethGetBlockByNumber(middle).getTimestamp().longValue();
 
             if (ts < timestamp) {
                 low = middle + 1;
