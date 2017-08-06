@@ -15,10 +15,6 @@ public class EthereumSplitSourceManager {
         this.splitSources = new ConcurrentHashMap<>();
     }
 
-//    public EthereumSplitSource get(String queryId) {
-//        return splitSources.get(queryId);
-//    }
-
     // Inline change
     public EthereumSplitSource put(String queryId, List<ConnectorSplit> splits) {
         EthereumSplitSource newSplitSource = new EthereumSplitSource(queryId, splits);

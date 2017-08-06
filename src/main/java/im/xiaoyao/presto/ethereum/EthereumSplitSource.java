@@ -47,7 +47,7 @@ public class EthereumSplitSource implements ConnectorSplitSource {
 
     @Override
     public synchronized boolean isFinished() {
-        return offset.get() >= splits.size();// && readOnly.get();
+        return offset.get() >= splits.size();
     }
 
     public synchronized boolean updateSplits(List<ConnectorSplit> splits) {

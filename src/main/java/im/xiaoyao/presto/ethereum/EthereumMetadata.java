@@ -28,7 +28,6 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 
 import javax.inject.Inject;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Collections;

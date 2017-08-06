@@ -69,10 +69,7 @@ public class EthereumSplitManager implements ConnectorSplitManager {
 
             ImmutableList<ConnectorSplit> connectorSplits = splits.build();
             log.info("Built %d splits", connectorSplits.size());
-//            return new FixedSplitSource(connectorSplits);
             return ssMgr.put(session.getQueryId(), connectorSplits);
-
-//            return ssMgr.get(session.getQueryId());
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Cannot get block number: ", e);
