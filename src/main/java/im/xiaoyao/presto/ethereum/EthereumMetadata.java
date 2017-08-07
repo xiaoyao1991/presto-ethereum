@@ -15,16 +15,22 @@ import com.facebook.presto.spi.connector.ConnectorMetadata;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker;
 import com.facebook.presto.spi.predicate.Range;
-import com.facebook.presto.spi.predicate.Ranges;
 import com.facebook.presto.spi.type.ArrayType;
 import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.DoubleType;
 import com.facebook.presto.spi.type.IntegerType;
 import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.log.Logger;
+import io.airlift.slice.Slice;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameter;
 
 import javax.inject.Inject;
+
+import java.io.IOException;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,19 +51,19 @@ public class EthereumMetadata implements ConnectorMetadata {
     private static final int H20_BYTE_HASH_STRING_LENGTH = 2 + 20 * 2;
 
     private final String connectorId;
+    private final Web3j web3j;
 
     @Inject
     public EthereumMetadata(
             EthereumConnectorId connectorId,
-            EthereumConnectorConfig config
+            EthereumWeb3jProvider provider
     ) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
-        requireNonNull(config, "config is null");
+        this.web3j = requireNonNull(provider, "provider is null").getWeb3j();
     }
 
     @Override
     public List<String> listSchemaNames(ConnectorSession session) {
-//        return Arrays.stream(EthereumSchema.values()).map(EthereumSchema::getName).collect(Collectors.toList());
         return Collections.singletonList(DEFAULT_SCHEMA);
     }
 
@@ -106,8 +112,8 @@ public class EthereumMetadata implements ConnectorMetadata {
             columnHandles.put("block_totalDifficulty", new EthereumColumnHandle(connectorId, index++, "block_totalDifficulty", BigintType.BIGINT));
             columnHandles.put("block_size", new EthereumColumnHandle(connectorId, index++, "block_size", IntegerType.INTEGER));
             columnHandles.put("block_extraData", new EthereumColumnHandle(connectorId, index++, "block_extraData", VarcharType.VARCHAR));
-            columnHandles.put("block_gasLimit", new EthereumColumnHandle(connectorId, index++, "block_gasLimit", BigintType.BIGINT));
-            columnHandles.put("block_gasUsed", new EthereumColumnHandle(connectorId, index++, "block_gasUsed", BigintType.BIGINT));
+            columnHandles.put("block_gasLimit", new EthereumColumnHandle(connectorId, index++, "block_gasLimit", DoubleType.DOUBLE));
+            columnHandles.put("block_gasUsed", new EthereumColumnHandle(connectorId, index++, "block_gasUsed", DoubleType.DOUBLE));
             columnHandles.put("block_timestamp", new EthereumColumnHandle(connectorId, index++, "block_timestamp", BigintType.BIGINT));
             columnHandles.put("block_transactions", new EthereumColumnHandle(connectorId, index++, "block_transactions", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
             columnHandles.put("block_uncles", new EthereumColumnHandle(connectorId, index++, "block_uncles", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
@@ -119,9 +125,9 @@ public class EthereumMetadata implements ConnectorMetadata {
             columnHandles.put("tx_transactionIndex", new EthereumColumnHandle(connectorId, index++, "tx_transactionIndex", IntegerType.INTEGER));
             columnHandles.put("tx_from", new EthereumColumnHandle(connectorId, index++, "tx_from", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
             columnHandles.put("tx_to", new EthereumColumnHandle(connectorId, index++, "tx_to", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
-            columnHandles.put("tx_value", new EthereumColumnHandle(connectorId, index++, "tx_value", BigintType.BIGINT));
-            columnHandles.put("tx_gas", new EthereumColumnHandle(connectorId, index++, "tx_gas", BigintType.BIGINT));
-            columnHandles.put("tx_gasPrice", new EthereumColumnHandle(connectorId, index++, "tx_gasPrice", BigintType.BIGINT));
+            columnHandles.put("tx_value", new EthereumColumnHandle(connectorId, index++, "tx_value", DoubleType.DOUBLE));
+            columnHandles.put("tx_gas", new EthereumColumnHandle(connectorId, index++, "tx_gas", DoubleType.DOUBLE));
+            columnHandles.put("tx_gasPrice", new EthereumColumnHandle(connectorId, index++, "tx_gasPrice", DoubleType.DOUBLE));
             columnHandles.put("tx_input", new EthereumColumnHandle(connectorId, index++, "tx_input", VarcharType.VARCHAR));
         } else {
             throw new IllegalArgumentException("Unknown Table Name " + tableName);
@@ -175,14 +181,41 @@ public class EthereumMetadata implements ConnectorMetadata {
                 if (entry.getKey() instanceof EthereumColumnHandle
                         && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_number")
                         || ((EthereumColumnHandle) entry.getKey()).getName().equals("tx_blockNumber"))) {
-                    Ranges ranges = entry.getValue().getValues().getRanges();
-                    List<Range> orderedRanges = ranges.getOrderedRanges();
-                    for (Range r : orderedRanges) {
+                    entry.getValue().getValues().getRanges().getOrderedRanges().forEach(r -> {
                         Marker low = r.getLow();
                         Marker high = r.getHigh();
-                        builder.add(new EthereumBlockRange(low.isLowerUnbounded() ? 1L : (Long) low.getValue(),
-                                high.isUpperUnbounded() ? -1 : (Long) high.getValue()));
-                    }
+                        builder.add(EthereumBlockRange.fromMarkers(low, high));
+                    });
+                } else if (entry.getKey() instanceof EthereumColumnHandle
+                        && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_hash")
+                        || ((EthereumColumnHandle) entry.getKey()).getName().equals("tx_blockHash"))) {
+                    entry.getValue().getValues().getRanges().getOrderedRanges().stream()
+                            .filter(Range::isSingleValue).forEach(r -> {
+                                String blockHash = ((Slice) r.getSingleValue()).toStringUtf8();
+                                try {
+                                    long blockNumber = web3j.ethGetBlockByHash(blockHash, true).send().getBlock().getNumber().longValue();
+                                    builder.add(new EthereumBlockRange(blockNumber, blockNumber));
+                                }
+                                catch (IOException e) {
+                                    throw new IllegalStateException("Unable to getting block by hash " + blockHash);
+                                }
+                            });
+                    log.info(entry.getValue().getValues().toString(null));
+                } else if (entry.getKey() instanceof EthereumColumnHandle
+                        && (((EthereumColumnHandle) entry.getKey()).getName().equals("block_timestamp"))) {
+                    entry.getValue().getValues().getRanges().getOrderedRanges().forEach(r -> {
+                        Marker low = r.getLow();
+                        Marker high = r.getHigh();
+                        try {
+                            long startBlock = low.isLowerUnbounded() ? 1L : findBlockByTimestamp((Long) low.getValue(), -1L);
+                            long endBlock = high.isUpperUnbounded() ? -1L : findBlockByTimestamp((Long) high.getValue(), 1L);
+                            builder.add(new EthereumBlockRange(startBlock, endBlock));
+                        }
+                        catch (IOException e) {
+                            throw new IllegalStateException("Unable to find block by timestamp");
+                        }
+                    });
+                    log.info(entry.getValue().getValues().toString(null));
                 }
             }
         }
@@ -198,8 +231,7 @@ public class EthereumMetadata implements ConnectorMetadata {
     }
 
     @SuppressWarnings("ValueOfIncrementOrDecrementUsed")
-    private ConnectorTableMetadata getTableMetadata(SchemaTableName schemaTableName)
-    {
+    private ConnectorTableMetadata getTableMetadata(SchemaTableName schemaTableName) {
         ImmutableList.Builder<ColumnMetadata> builder = ImmutableList.builder();
 
         if (EthereumTable.BLOCK.getName().equals(schemaTableName.getTableName())) {
@@ -216,8 +248,8 @@ public class EthereumMetadata implements ConnectorMetadata {
             builder.add(new ColumnMetadata("block_totalDifficulty", BigintType.BIGINT));
             builder.add(new ColumnMetadata("block_size", IntegerType.INTEGER));
             builder.add(new ColumnMetadata("block_extraData", VarcharType.VARCHAR));
-            builder.add(new ColumnMetadata("block_gasLimit", BigintType.BIGINT));
-            builder.add(new ColumnMetadata("block_gasUsed", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("block_gasLimit", DoubleType.DOUBLE));
+            builder.add(new ColumnMetadata("block_gasUsed", DoubleType.DOUBLE));
             builder.add(new ColumnMetadata("block_timestamp", BigintType.BIGINT));
             builder.add(new ColumnMetadata("block_transactions", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
             builder.add(new ColumnMetadata("block_uncles", new ArrayType(VarcharType.createVarcharType(H32_BYTE_HASH_STRING_LENGTH))));
@@ -229,14 +261,41 @@ public class EthereumMetadata implements ConnectorMetadata {
             builder.add(new ColumnMetadata("tx_transactionIndex", IntegerType.INTEGER));
             builder.add(new ColumnMetadata("tx_from", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
             builder.add(new ColumnMetadata("tx_to", VarcharType.createVarcharType(H20_BYTE_HASH_STRING_LENGTH)));
-            builder.add(new ColumnMetadata("tx_value", BigintType.BIGINT));
-            builder.add(new ColumnMetadata("tx_gas", BigintType.BIGINT));
-            builder.add(new ColumnMetadata("tx_gasPrice", BigintType.BIGINT));
+            builder.add(new ColumnMetadata("tx_value", DoubleType.DOUBLE));
+            builder.add(new ColumnMetadata("tx_gas", DoubleType.DOUBLE));
+            builder.add(new ColumnMetadata("tx_gasPrice", DoubleType.DOUBLE));
             builder.add(new ColumnMetadata("tx_input", VarcharType.VARCHAR));
         } else {
             throw new IllegalArgumentException("Unknown Table Name " + schemaTableName.getTableName());
         }
 
         return new ConnectorTableMetadata(schemaTableName, builder.build());
+    }
+
+    private long findBlockByTimestamp(long timestamp, long offset) throws IOException {
+        long startBlock = 1L;
+        long currentBlock = web3j.ethBlockNumber().send().getBlockNumber().longValue();
+
+        if (currentBlock <= 1) {
+            return currentBlock;
+        }
+
+        long low = startBlock;
+        long high = currentBlock;
+        long middle = low + (high - low) / 2;
+
+        while(low <= high) {
+            middle = low + (high - low) / 2;
+            long ts = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(BigInteger.valueOf(middle)), false).send().getBlock().getTimestamp().longValue();
+
+            if (ts < timestamp) {
+                low = middle + 1;
+            } else if (ts > timestamp) {
+                high = middle - 1;
+            } else {
+                return middle;
+            }
+        }
+        return middle + offset;
     }
 }

@@ -19,7 +19,7 @@ public class EthereumRecordSet implements RecordSet {
     private static final Logger log = Logger.get(EthereumRecordSet.class);
 
     private final EthereumSplit split;
-    private final Web3j web3j;   //TODO: where to put web3j, or have a web3j manager
+    private final Web3j web3j;
 
     private final List<EthereumColumnHandle> columnHandles;
     private final List<Type> columnTypes;

@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.deser.std.FromStringDeserializer;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import org.web3j.protocol.Web3j;
-import org.web3j.protocol.http.HttpService;
 
 import javax.inject.Inject;
 
@@ -25,9 +23,8 @@ public class EthereumConnectorModule implements Module {
     @Override
     public void configure(Binder binder) {
         binder.bind(EthereumConnector.class).in(Scopes.SINGLETON);
-        binder.bind(Web3j.class).toInstance(Web3j.build(new HttpService()));
-//        binder.bind(EthereumConnectorId.class).toInstance(new EthereumConnectorId(connectorId));
         binder.bind(EthereumMetadata.class).in(Scopes.SINGLETON);
+        binder.bind(EthereumWeb3jProvider.class).in(Scopes.SINGLETON);
 
         binder.bind(EthereumSplitManager.class).in(Scopes.SINGLETON);
         binder.bind(EthereumRecordSetProvider.class).in(Scopes.SINGLETON);

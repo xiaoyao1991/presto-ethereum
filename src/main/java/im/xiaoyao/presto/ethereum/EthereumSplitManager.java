@@ -13,6 +13,7 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.EthBlockNumber;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 
 import static im.xiaoyao.presto.ethereum.EthereumHandleResolver.convertLayout;
@@ -28,11 +29,12 @@ public class EthereumSplitManager implements ConnectorSplitManager {
     public EthereumSplitManager(
             EthereumConnectorId connectorId,
             EthereumConnectorConfig config,
-            Web3j web3j
+            EthereumWeb3jProvider web3jProvider
     ) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
-        this.web3j = requireNonNull(web3j, "web3j is null");
+        requireNonNull(web3jProvider, "web3j is null");
         requireNonNull(config, "config is null");
+        this.web3j = web3jProvider.getWeb3j();
     }
 
     @Override

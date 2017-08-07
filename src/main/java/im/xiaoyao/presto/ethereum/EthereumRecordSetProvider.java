@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import org.web3j.protocol.Web3j;
 
 import javax.inject.Inject;
+
 import java.util.List;
 
 import static im.xiaoyao.presto.ethereum.EthereumHandleResolver.convertColumnHandle;
@@ -19,8 +20,8 @@ public class EthereumRecordSetProvider implements ConnectorRecordSetProvider {
     private final Web3j web3j;
 
     @Inject
-    public EthereumRecordSetProvider(Web3j web3j) {
-        this.web3j = web3j;
+    public EthereumRecordSetProvider(EthereumWeb3jProvider web3jProvider) {
+        this.web3j = web3jProvider.getWeb3j();
     }
 
     @Override
