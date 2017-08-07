@@ -40,3 +40,57 @@ WHERE block_number<=100000
 GROUP BY block_miner
 ORDER BY num DESC
 LIMIT 15;
+
+
+-- Describe the  database structure
+SHOW TABLES;
+    Table
+-------------
+ block
+ transaction
+(2 rows)
+
+
+DESCRIBE block;
+-----------------------+--------------------+-------+---------
+ block_number           | bigint             |       |
+ block_hash             | varchar(66)        |       |
+ block_parenthash       | varchar(66)        |       |
+ block_nonce            | varchar(18)        |       |
+ block_sha3uncles       | varchar(66)        |       |
+ block_logsbloom        | varchar(514)       |       |
+ block_transactionsroot | varchar(66)        |       |
+ block_stateroot        | varchar(66)        |       |
+ block_miner            | varchar(42)        |       |
+ block_difficulty       | bigint             |       |
+ block_totaldifficulty  | bigint             |       |
+ block_size             | integer            |       |
+ block_extradata        | varchar            |       |
+ block_gaslimit         | double             |       |
+ block_gasused          | double             |       |
+ block_timestamp        | bigint             |       |
+ block_transactions     | array(varchar(66)) |       |
+ block_uncles           | array(varchar(66)) |       |
+ 
+ 
+ 
+ 
+ DESCRIBE transaction;
+        Column        |    Type     | Extra | Comment
+---------------------+-------------+-------+---------
+ tx_hash             | varchar(66) |       |
+ tx_nonce            | bigint      |       |
+ tx_blockhash        | varchar(66) |       |
+ tx_blocknumber      | bigint      |       |
+ tx_transactionindex | integer     |       |
+ tx_from             | varchar(42) |       |
+ tx_to               | varchar(42) |       |
+ tx_value            | double      |       |
+ tx_gas              | double      |       |
+ tx_gasprice         | double      |       |
+ tx_input            | varchar     |       |
+
+
+
+ 
+ 
