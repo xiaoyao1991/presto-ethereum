@@ -121,7 +121,7 @@ LIMIT 15;
 
 
 
--- Describe the  database structure
+- Describe the  database structure
 ```sql
 SHOW TABLES;
     Table
@@ -130,9 +130,8 @@ block
 transaction
 (2 rows)
 
-
-
 DESCRIBE block;
+Column                 | Type               | Extra | Comment
 -----------------------------------------------------------
 block_number           | bigint             |       |
 block_hash             | varchar(66)        |       |
@@ -157,7 +156,8 @@ block_uncles           | array(varchar(66)) |       |
 
 
 DESCRIBE transaction;
-        Column        |    Type     | Extra | Comment
+
+Column              |    Type     | Extra | Comment
 --------------------------------------------------
 tx_hash             | varchar(66) |       |
 tx_nonce            | bigint      |       |
