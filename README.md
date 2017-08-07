@@ -33,7 +33,10 @@ Have an Ethereum client that you can connect to. There are 2 options:
     connector.name=ethereum
 
     # You can connect through Ethereum HTTP JSON RPC endpoint
+    # IMPORTANT - for local testing start geth with rpcport
+    # geth --rpc --rpcaddr "127.0.0.1" --rpcport "8545"
     ethereum.jsonrpc=http://localhost:8545/
+
 
     # Or you can connect through IPC socket
     # ethereum.ipc=/path/to/ipc_socketfile
