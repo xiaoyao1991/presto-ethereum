@@ -12,7 +12,9 @@ Have an Ethereum client that you can connect to. There are 2 options:
 1. Use [Infura](https://infura.io), a hosted Ethereum client in the cloud.    
 
 ### Usage
-1. [Install Presto](https://prestodb.io/docs/current/installation/deployment.html). *Follow the instructions on that page to create relevant config files.*  
+1. [Install Presto](https://prestodb.io/docs/current/installation/deployment.html). *Follow the instructions on that page to create relevant config files.*     
+sample config files here https://gist.github.com/usk81/8100227#file-config-properties     
+
   By the end of this step, your presto installation folder structure should look like:
     ```
     ├── bin
