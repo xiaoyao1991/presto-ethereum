@@ -15,6 +15,7 @@ import org.web3j.protocol.core.methods.response.EthBlock;
 
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,7 @@ public class EthereumRecordCursor implements RecordCursor {
     public EthereumRecordCursor(List<EthereumColumnHandle> columnHandles, EthBlock block, EthereumTable table) {
         this.columnHandles = columnHandles;
         this.table = table;
+        this.suppliers = Collections.emptyList();
 
         fieldToColumnIndex = new int[columnHandles.size()];
         for (int i = 0; i < columnHandles.size(); i++) {
