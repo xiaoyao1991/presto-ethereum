@@ -117,18 +117,20 @@ GROUP BY block_miner
 ORDER BY num DESC
 LIMIT 15;
 ```
-
-
-
-
-- Describe the  database structure
+- ERC20 Token Movement in the last 100 blocks
+```sql
+SELECT erc20_token, SUM(erc20_value) FROM erc20
+WHERE erc20_blocknumber >= 4147340 AND erc20_blocknumber<=4147350
+GROUP BY erc20_token;
+```
+- Describe the database structure
 ```sql
 SHOW TABLES;
     Table
 -------------
-block
-transaction
-(2 rows)
+ block
+ erc20
+ transaction
 
 DESCRIBE block;
 Column                 | Type               | Extra | Comment
@@ -153,8 +155,6 @@ block_transactions     | array(varchar(66)) |       |
 block_uncles           | array(varchar(66)) |       |
 
 
-
-
 DESCRIBE transaction;
 
 Column              |    Type     | Extra | Comment
@@ -170,10 +170,18 @@ tx_value            | double      |       |
 tx_gas              | double      |       |
 tx_gasprice         | double      |       |
 tx_input            | varchar     |       |
+
+
+DESCRIBE erc20;
+      Column       |    Type     | Extra | Comment
+-------------------+-------------+-------+---------
+ erc20_token       | varchar     |       |
+ erc20_from        | varchar(42) |       |
+ erc20_to          | varchar(42) |       |
+ erc20_value       | double      |       |
+ erc20_txhash      | varchar(66) |       |
+ erc20_blocknumber | bigint      |       |
 ```
-
-
-
 
 ### Web3 Functions
 In addition to the various built-in [Presto functions](https://prestodb.io/docs/current/functions.html), some web3 functions are ported so that they can be called inline with SQL statements directly. Currently, the supported web3 functions are
