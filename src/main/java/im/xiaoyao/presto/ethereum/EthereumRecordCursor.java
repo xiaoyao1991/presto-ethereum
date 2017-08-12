@@ -173,10 +173,15 @@ public class EthereumRecordCursor implements RecordCursor {
 
                     for (Log l : logs) {
                         if (l.getTopics().get(0).equalsIgnoreCase(EthereumERC20Utils.TRANSFER_EVENT_TOPIC)) {
-                            builder.add(l::getAddress);     // Token contract address
-                            builder.add(() -> h32ToH20(l.getTopics().get(1)));  // from address
-                            builder.add(() -> h32ToH20(l.getTopics().get(2)));  // to address
-                            builder.add(() -> EthereumERC20Utils.hexToDouble(l.getData()));   // amount value
+                            // Token contract address
+                            builder.add(() -> Optional.ofNullable(EthereumERC20Token.lookup.get(l.getAddress().toLowerCase()))
+                                    .map(Enum::name).orElse(String.format("Unknown ERC20 Token(%s)", l.getAddress())));
+                            // from address
+                            builder.add(() -> h32ToH20(l.getTopics().get(1)));
+                            // to address
+                            builder.add(() -> h32ToH20(l.getTopics().get(2)));
+                            // amount value
+                            builder.add(() -> EthereumERC20Utils.hexToDouble(l.getData()));
                             builder.add(transactionReceipt::getTransactionHash);
                             builder.add(transactionReceipt::getBlockNumber);
                             this.suppliers = builder.build();
