@@ -153,7 +153,7 @@ public class EthereumRecordCursor implements RecordCursor {
             builder.add(tx::getGasPrice);
             builder.add(tx::getInput);
         } else if (table == EthereumTable.ERC20) {
-            while (txIter.hasNext()) {
+            while (txIter.hasNext()) {  //TODO: separate ERC20 iterator
                 EthBlock.TransactionResult tr = txIter.next();
                 EthBlock.TransactionObject tx = (EthBlock.TransactionObject) tr.get();
 
@@ -171,10 +171,7 @@ public class EthereumRecordCursor implements RecordCursor {
                         continue;
                     }
 
-                    log.info("receipt: " + transactionReceipt.getTransactionHash());
                     for (Log l : logs) {
-                        log.info(l.getLogIndex().toString());
-                        l.getTopics().stream().forEach(t -> log.info("topic: " + t));
                         if (l.getTopics().get(0).equalsIgnoreCase(EthereumERC20Utils.TRANSFER_EVENT_TOPIC)) {
                             builder.add(l::getAddress);     // Token contract address
                             builder.add(() -> h32ToH20(l.getTopics().get(1)));  // from address
@@ -187,7 +184,7 @@ public class EthereumRecordCursor implements RecordCursor {
                         }
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    throw new IllegalStateException("Unable to get transactionReceipt");
                 }
             }
             return false;
