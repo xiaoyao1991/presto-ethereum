@@ -52,6 +52,6 @@ public class EthereumRecordSet implements RecordSet {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return new EthereumRecordCursor(columnHandles, block, split.getTable());
+        return new EthereumRecordCursor(columnHandles, block, split.getTable(), web3j);
     }
 }

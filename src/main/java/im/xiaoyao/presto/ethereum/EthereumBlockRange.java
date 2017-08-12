@@ -31,7 +31,7 @@ public class EthereumBlockRange {
             throw new IllegalArgumentException("High bound cannot be ABOVE");
         }
 
-        if (startBlock > endBlock) {
+        if (startBlock > endBlock && endBlock != -1L) {
             throw new IllegalArgumentException("Low bound is greater than high bound");
         }
 

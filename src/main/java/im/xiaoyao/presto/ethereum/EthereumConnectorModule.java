@@ -16,9 +16,6 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Created by xiaoyaoqian on 7/23/17.
- */
 public class EthereumConnectorModule implements Module {
     @Override
     public void configure(Binder binder) {
