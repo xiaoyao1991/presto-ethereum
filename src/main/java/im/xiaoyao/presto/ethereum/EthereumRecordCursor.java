@@ -8,17 +8,23 @@ import com.facebook.presto.spi.block.InterleavedBlockBuilder;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
+import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 import org.joda.time.DateTimeZone;
+import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.EthBlock;
+import org.web3j.protocol.core.methods.response.Log;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
+import java.io.IOException;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -42,20 +48,24 @@ import static java.lang.Float.floatToRawIntBits;
 import static java.util.Objects.requireNonNull;
 
 public class EthereumRecordCursor implements RecordCursor {
+    private static final Logger log = Logger.get(EthereumRecordCursor.class);
+
     private final EthBlock block;
     private final Iterator<EthBlock> blockIter;
     private final Iterator<EthBlock.TransactionResult> txIter;
 
     private final EthereumTable table;
+    private final Web3j web3j;
 
     private final List<EthereumColumnHandle> columnHandles;
     private final int[] fieldToColumnIndex;
 
     private List<Supplier> suppliers;
 
-    public EthereumRecordCursor(List<EthereumColumnHandle> columnHandles, EthBlock block, EthereumTable table) {
+    public EthereumRecordCursor(List<EthereumColumnHandle> columnHandles, EthBlock block, EthereumTable table, Web3j web3j) {
         this.columnHandles = columnHandles;
         this.table = table;
+        this.web3j = web3j;
         this.suppliers = Collections.emptyList();
 
         fieldToColumnIndex = new int[columnHandles.size()];
@@ -94,7 +104,8 @@ public class EthereumRecordCursor implements RecordCursor {
     @Override
     public boolean advanceNextPosition() {
         if (table == EthereumTable.BLOCK && !blockIter.hasNext()
-                || table == EthereumTable.TRANSACTION && !txIter.hasNext()) {
+                || table == EthereumTable.TRANSACTION && !txIter.hasNext()
+                || table == EthereumTable.ERC20 && !txIter.hasNext()) {
             return false;
         }
 
@@ -141,6 +152,45 @@ public class EthereumRecordCursor implements RecordCursor {
             builder.add(tx::getGas);
             builder.add(tx::getGasPrice);
             builder.add(tx::getInput);
+        } else if (table == EthereumTable.ERC20) {
+            while (txIter.hasNext()) {
+                EthBlock.TransactionResult tr = txIter.next();
+                EthBlock.TransactionObject tx = (EthBlock.TransactionObject) tr.get();
+
+                try {
+                    Optional<TransactionReceipt> transactionReceiptOptional = web3j.ethGetTransactionReceipt(tx.getHash()).send().getTransactionReceipt()
+                            .filter(receipt -> receipt.getLogs() != null && !receipt.getLogs().isEmpty());
+
+                    if (!transactionReceiptOptional.isPresent()) {
+                        continue;
+                    }
+
+                    TransactionReceipt transactionReceipt = transactionReceiptOptional.get();
+                    List<Log> logs = transactionReceipt.getLogs();
+                    if (logs == null || logs.isEmpty()) {
+                        continue;
+                    }
+
+                    log.info("receipt: " + transactionReceipt.getTransactionHash());
+                    for (Log l : logs) {
+                        log.info(l.getLogIndex().toString());
+                        l.getTopics().stream().forEach(t -> log.info("topic: " + t));
+                        if (l.getTopics().get(0).equalsIgnoreCase(EthereumERC20Utils.TRANSFER_EVENT_TOPIC)) {
+                            builder.add(l::getAddress);     // Token contract address
+                            builder.add(() -> h32ToH20(l.getTopics().get(1)));  // from address
+                            builder.add(() -> h32ToH20(l.getTopics().get(2)));  // to address
+                            builder.add(() -> EthereumERC20Utils.hexToDouble(l.getData()));   // amount value
+                            builder.add(transactionReceipt::getTransactionHash);
+                            builder.add(transactionReceipt::getBlockNumber);
+                            this.suppliers = builder.build();
+                            return true;
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return false;
         } else {
             return false;
         }
@@ -386,4 +436,7 @@ public class EthereumRecordCursor implements RecordCursor {
         return baseName.equals(StandardTypes.MAP) || baseName.equals(StandardTypes.ARRAY) || baseName.equals(StandardTypes.ROW);
     }
 
+    private static String h32ToH20(String h32) {
+        return "0x" + h32.substring(EthereumMetadata.H32_BYTE_HASH_STRING_LENGTH - EthereumMetadata.H20_BYTE_HASH_STRING_LENGTH + 2);
+    }
 }

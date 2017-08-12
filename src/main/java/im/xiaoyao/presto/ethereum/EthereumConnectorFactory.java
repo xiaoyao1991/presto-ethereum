@@ -14,9 +14,6 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * Created by xiaoyaoqian on 7/19/17.
- */
 public class EthereumConnectorFactory implements ConnectorFactory {
     @Override
     public String getName() {
