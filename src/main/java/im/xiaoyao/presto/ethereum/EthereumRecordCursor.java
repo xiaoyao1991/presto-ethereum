@@ -15,9 +15,7 @@ import org.joda.time.DateTimeZone;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.Log;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
-import java.io.IOException;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Collections;
@@ -53,6 +51,7 @@ public class EthereumRecordCursor implements RecordCursor {
     private final EthBlock block;
     private final Iterator<EthBlock> blockIter;
     private final Iterator<EthBlock.TransactionResult> txIter;
+    private final Iterator<Log> logIter;
 
     private final EthereumTable table;
     private final Web3j web3j;
@@ -78,6 +77,7 @@ public class EthereumRecordCursor implements RecordCursor {
         this.block = requireNonNull(block, "block is null");
         this.blockIter = ImmutableList.of(block).iterator();
         this.txIter = block.getBlock().getTransactions().iterator();
+        this.logIter = new EthereumLogLazyIterator(block, web3j);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class EthereumRecordCursor implements RecordCursor {
     public boolean advanceNextPosition() {
         if (table == EthereumTable.BLOCK && !blockIter.hasNext()
                 || table == EthereumTable.TRANSACTION && !txIter.hasNext()
-                || table == EthereumTable.ERC20 && !txIter.hasNext()) {
+                || table == EthereumTable.ERC20 && !logIter.hasNext()) {
             return false;
         }
 
@@ -153,45 +153,25 @@ public class EthereumRecordCursor implements RecordCursor {
             builder.add(tx::getGasPrice);
             builder.add(tx::getInput);
         } else if (table == EthereumTable.ERC20) {
-            while (txIter.hasNext()) {  //TODO: separate ERC20 iterator
-                EthBlock.TransactionResult tr = txIter.next();
-                EthBlock.TransactionObject tx = (EthBlock.TransactionObject) tr.get();
-
-                try {
-                    Optional<TransactionReceipt> transactionReceiptOptional = web3j.ethGetTransactionReceipt(tx.getHash()).send().getTransactionReceipt()
-                            .filter(receipt -> receipt.getLogs() != null && !receipt.getLogs().isEmpty());
-
-                    if (!transactionReceiptOptional.isPresent()) {
-                        continue;
-                    }
-
-                    TransactionReceipt transactionReceipt = transactionReceiptOptional.get();
-                    List<Log> logs = transactionReceipt.getLogs();
-                    if (logs == null || logs.isEmpty()) {
-                        continue;
-                    }
-
-                    for (Log l : logs) {
-                        if (l.getTopics().get(0).equalsIgnoreCase(EthereumERC20Utils.TRANSFER_EVENT_TOPIC)) {
-                            // Token contract address
-                            builder.add(() -> Optional.ofNullable(EthereumERC20Token.lookup.get(l.getAddress().toLowerCase()))
-                                    .map(Enum::name).orElse(String.format("Unknown ERC20 Token(%s)", l.getAddress())));
-                            // from address
-                            builder.add(() -> h32ToH20(l.getTopics().get(1)));
-                            // to address
-                            builder.add(() -> h32ToH20(l.getTopics().get(2)));
-                            // amount value
-                            builder.add(() -> EthereumERC20Utils.hexToDouble(l.getData()));
-                            builder.add(transactionReceipt::getTransactionHash);
-                            builder.add(transactionReceipt::getBlockNumber);
-                            this.suppliers = builder.build();
-                            return true;
-                        }
-                    }
-                } catch (IOException e) {
-                    throw new IllegalStateException("Unable to get transactionReceipt");
+            while (logIter.hasNext()) {
+                Log l = logIter.next();
+                if (l.getTopics().get(0).equalsIgnoreCase(EthereumERC20Utils.TRANSFER_EVENT_TOPIC)) {
+                    // Token contract address
+                    builder.add(() -> Optional.ofNullable(EthereumERC20Token.lookup.get(l.getAddress().toLowerCase()))
+                            .map(Enum::name).orElse(String.format("Unknown ERC20 Token(%s)", l.getAddress())));
+                    // from address
+                    builder.add(() -> h32ToH20(l.getTopics().get(1)));
+                    // to address
+                    builder.add(() -> h32ToH20(l.getTopics().get(2)));
+                    // amount value
+                    builder.add(() -> EthereumERC20Utils.hexToDouble(l.getData()));
+                    builder.add(l::getTransactionHash);
+                    builder.add(l::getBlockNumber);
+                    this.suppliers = builder.build();
+                    return true;
                 }
             }
+
             return false;
         } else {
             return false;
