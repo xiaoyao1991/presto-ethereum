@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <version.presto>0.181</version.presto>
+        <version.presto>0.196</version.presto>
         <version.web3j>2.2.2</version.web3j>
         <version.guice>4.0</version.guice>
         <version.airlift>0.148</version.airlift>
