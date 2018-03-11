@@ -41,7 +41,8 @@ public class EthereumSplitManager implements ConnectorSplitManager {
     public ConnectorSplitSource getSplits(
             ConnectorTransactionHandle transaction,
             ConnectorSession session,
-            ConnectorTableLayoutHandle layout
+            ConnectorTableLayoutHandle layout,
+            SplitSchedulingStrategy splitSchedulingStrategy
     ) {
         EthereumTableLayoutHandle tableLayoutHandle = convertLayout(layout);
         EthereumTableHandle tableHandle = tableLayoutHandle.getTable();

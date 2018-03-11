@@ -4,7 +4,6 @@ import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.block.BlockBuilder;
 import com.facebook.presto.spi.block.BlockBuilderStatus;
-import com.facebook.presto.spi.block.InterleavedBlockBuilder;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.base.Splitter;
@@ -31,7 +30,7 @@ import java.util.stream.Collectors;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.Chars.isCharType;
-import static com.facebook.presto.spi.type.Chars.trimSpacesAndTruncateToLength;
+import static com.facebook.presto.spi.type.Chars.truncateToLengthAndTrimSpaces;
 import static com.facebook.presto.spi.type.DateType.DATE;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.IntegerType.INTEGER;
@@ -79,11 +78,6 @@ public class EthereumRecordCursor implements RecordCursor {
         this.blockIter = ImmutableList.of(block).iterator();
         this.txIter = block.getBlock().getTransactions().iterator();
         this.logIter = new EthereumLogLazyIterator(block, web3j);
-    }
-
-    @Override
-    public long getTotalBytes() {
-        return block.getBlock().getSize().longValue();
     }
 
     @Override
@@ -269,7 +263,7 @@ public class EthereumRecordCursor implements RecordCursor {
             sliceValue = truncateToLength(sliceValue, type);
         }
         if (isCharType(type)) {
-            sliceValue = trimSpacesAndTruncateToLength(sliceValue, type);
+            sliceValue = truncateToLengthAndTrimSpaces(sliceValue, type);
         }
 
         return sliceValue;
@@ -331,13 +325,13 @@ public class EthereumRecordCursor implements RecordCursor {
         checkArgument(typeParameters.size() == 2, "map must have exactly 2 type parameter");
         Type keyType = typeParameters.get(0);
         Type valueType = typeParameters.get(1);
+        boolean builderSynthesized = false;
 
-        BlockBuilder currentBuilder;
-        if (builder != null) {
-            currentBuilder = builder.beginBlockEntry();
-        } else {
-            currentBuilder = new InterleavedBlockBuilder(typeParameters, new BlockBuilderStatus(), map.size());
+        if (builder == null) {
+            builderSynthesized = true;
+            builder = type.createBlockBuilder(new BlockBuilderStatus(), 1);
         }
+        BlockBuilder currentBuilder = builder.beginBlockEntry();
 
         for (Map.Entry<?, ?> entry : map.entrySet()) {
             // Hive skips map entries with null keys
@@ -347,12 +341,11 @@ public class EthereumRecordCursor implements RecordCursor {
             }
         }
 
-        if (builder != null) {
-            builder.closeEntry();
-            return null;
+        builder.closeEntry();
+        if (builderSynthesized) {
+            return (Block) type.getObject(builder, 0);
         } else {
-            Block resultBlock = currentBuilder.build();
-            return resultBlock;
+            return null;
         }
     }
 
@@ -364,12 +357,12 @@ public class EthereumRecordCursor implements RecordCursor {
 
         List<Type> typeParameters = type.getTypeParameters();
         EthBlock.TransactionObject structData = (EthBlock.TransactionObject) object;
-        BlockBuilder currentBuilder;
-        if (builder != null) {
-            currentBuilder = builder.beginBlockEntry();
-        } else {
-            currentBuilder = new InterleavedBlockBuilder(typeParameters, new BlockBuilderStatus(), typeParameters.size());
+        boolean builderSynthesized = false;
+        if (builder == null) {
+            builderSynthesized = true;
+            builder = type.createBlockBuilder(new BlockBuilderStatus(), 1);
         }
+        BlockBuilder currentBuilder = builder.beginBlockEntry();
 
         ImmutableList.Builder<Supplier> lstBuilder = ImmutableList.builder();
         lstBuilder.add(structData::getHash);
@@ -389,12 +382,11 @@ public class EthereumRecordCursor implements RecordCursor {
             serializeObject(typeParameters.get(i), currentBuilder, txColumns.get(i).get());
         }
 
-        if (builder != null) {
-            builder.closeEntry();
-            return null;
+        builder.closeEntry();
+        if (builderSynthesized) {
+            return (Block) type.getObject(builder, 0);
         } else {
-            Block resultBlock = currentBuilder.build();
-            return resultBlock;
+            return null;
         }
     }
 
