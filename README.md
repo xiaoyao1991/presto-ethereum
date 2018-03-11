@@ -194,3 +194,23 @@ In addition to the various built-in [Presto functions](https://prestodb.io/docs/
 1. [eth_blockNumber](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethblocknumber)
 1. [eth_getBalance](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgetbalance)
 1. [eth_getTransactionCount](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgettransactioncount)
+
+### Troubleshooting
+
+* You must use python2. You will get invalid syntax errors if you use Python3.
+```
+-> bin/launcher start
+  File "/your_path/presto-server-0.196/bin/launcher.py", line 38
+    except OSError, e:
+                  ^
+SyntaxError: invalid syntax
+```
+
+* Use Java 8 only. You might get the following errors if you use the wrong Java version.
+
+```
+Unrecognized VM option 'ExitOnOutOfMemoryError'
+Did you mean 'OnOutOfMemoryError=<value>'?
+Error: Could not create the Java Virtual Machine.
+Error: A fatal exception has occurred. Program will exit.
+```
