@@ -2,7 +2,7 @@
 Unleash the Power of Presto Interactive SQL Querying on Ethereum Blockchain
 
 ### Introduction
-[Presto](https://prestodb.io) is a powerful interactive querying engine that enables running SQL queries on anything -- be it MySQL, HDFS, local file, Kafka -- as long as there exist a connector to the source.
+[Presto](https://prestosql.io) is a powerful interactive querying engine that enables running SQL queries on anything -- be it MySQL, HDFS, local file, Kafka -- as long as there exist a connector to the source.
 
 This is a Presto connector to the Ethereum blockchain data. With this connector, one can get hands on with Ethereum blockchain analytics work without having to know how to play with the nitty gritty Javascript API.
 
@@ -15,7 +15,7 @@ Have an Ethereum client that you can connect to. There are 2 options:
 Specify a block range where you can (e.g. `WHERE block.block_number > x AND block.block_number < y`, or `WHERE transaction.tx_blocknumber > x AND transaction.tx_blocknumber < y`, or `WHERE erc20.erc20_blocknumber > x AND erc20.erc20_blocknumber < y`). Block number is the default and only predicate that can push down to narrow down data scan range. Queries without block ranges will cause presto to retrieve blocks all the way from the first block, which takes forever. 
 
 ### Usage
-1. [Install Presto](https://prestodb.io/docs/current/installation/deployment.html). *Follow the instructions on that page to create relevant config files.*  
+1. [Install Presto](https://prestosql.io/docs/current/installation/deployment.html). *Follow the instructions on that page to create relevant config files.*  
   By the end of this step, your presto installation folder structure should look like:
     ```
     ├── bin
@@ -26,7 +26,7 @@ Specify a block range where you can (e.g. `WHERE block.block_number > x AND bloc
     │   └── node.properties
     ├── plugin
     ```
-1. [Install Presto CLI](https://prestodb.io/docs/current/installation/cli.html)
+1. [Install Presto CLI](https://prestosql.io/docs/current/installation/cli.html)
 1. Clone this repo and run `mvn clean package` to build the plugin. You will find the built plugin in the `target` folder.
 1. Load the plugin to Presto  
     a. Create the ethereum connector config inside of `etc`.  
