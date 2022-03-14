@@ -3,7 +3,7 @@ package im.xiaoyao.presto.ethereum.udfs;
 import com.facebook.presto.spi.function.Description;
 import com.facebook.presto.spi.function.ScalarFunction;
 import com.facebook.presto.spi.function.SqlType;
-import com.facebook.presto.spi.type.StandardTypes;
+import com.facebook.presto.common.type.StandardTypes;
 import im.xiaoyao.presto.ethereum.EthereumConnectorConfig;
 import io.airlift.configuration.ConfigurationLoader;
 import io.airlift.log.Logger;
