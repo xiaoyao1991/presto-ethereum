@@ -1,15 +1,15 @@
-# Presto Ethereum Connector
-Unleash the Power of Presto Interactive SQL Querying on Ethereum Blockchain
+# Presto Tezos Connector
+Unleash the Power of Presto Interactive SQL Querying on Tezos Blockchain
 
 ### Introduction
 [Presto](https://prestosql.io) is a powerful interactive querying engine that enables running SQL queries on anything -- be it MySQL, HDFS, local file, Kafka -- as long as there exist a connector to the source.
 
-This is a Presto connector to the Ethereum blockchain data. With this connector, one can get hands on with Ethereum blockchain analytics work without having to know how to play with the nitty gritty Javascript API.
+This is a Presto connector to the Tezos blockchain data. With this connector, one can get hands on with Tezos blockchain analytics work without having to know how to play with the nitty gritty Javascript API.
 
 ### Prerequisites
-Have an Ethereum client that you can connect to. There are 2 options:
-1. Run [Geth](https://github.com/ethereum/go-ethereum) or [Parity](https://github.com/paritytech/parity) locally.
-1. Use [Infura](https://infura.io), a hosted Ethereum client in the cloud.    
+Have an Tezos client that you can connect to. There are 2 options:
+1. Run [Geth](https://github.com/tezos/go-tezos) or [Parity](https://github.com/paritytech/parity) locally.
+1. Use [Infura](https://infura.io), a hosted Tezos client in the cloud.    
 
 ### Note
 Specify a block range where you can (e.g. `WHERE block.block_number > x AND block.block_number < y`, or `WHERE transaction.tx_blocknumber > x AND transaction.tx_blocknumber < y`, or `WHERE erc20.erc20_blocknumber > x AND erc20.erc20_blocknumber < y`). Block number is the default and only predicate that can push down to narrow down data scan range. Queries without block ranges will cause presto to retrieve blocks all the way from the first block, which takes forever. 
@@ -29,29 +29,29 @@ Specify a block range where you can (e.g. `WHERE block.block_number > x AND bloc
 1. [Install Presto CLI](https://prestosql.io/docs/current/installation/cli.html)
 1. Clone this repo and run `mvn clean package` to build the plugin. You will find the built plugin in the `target` folder.
 1. Load the plugin to Presto  
-    a. Create the ethereum connector config inside of `etc`.  
-    `$ mkdir -p etc/catalog && touch etc/catalog/ethereum.properties`   
-    Paste the following to the ethereum.properties:
+    a. Create the tezos connector config inside of `etc`.  
+    `$ mkdir -p etc/catalog && touch etc/catalog/tezos.properties`   
+    Paste the following to the tezos.properties:
     ```
-    connector.name=ethereum
+    connector.name=tezos
 
-    # You can connect through Ethereum HTTP JSON RPC endpoint
+    # You can connect through Tezos HTTP JSON RPC endpoint
     # IMPORTANT - for local testing start geth with rpcport
     # geth --rpc --rpcaddr "127.0.0.1" --rpcport "8545"
-    ethereum.jsonrpc=http://localhost:8545/
+    tezos.jsonrpc=http://localhost:8545/
 
 
     # Or you can connect through IPC socket
-    # ethereum.ipc=/path/to/ipc_socketfile
+    # tezos.ipc=/path/to/ipc_socketfile
 
     # Or you can connect to Infura
-    # ethereum.infura=https://mainnet.infura.io/<your_token>
+    # tezos.infura=https://mainnet.infura.io/<your_token>
     ```
     b. Copy and extract the built plugin to your presto plugin folder  
     ```
-    $ mkdir -p plugin/ethereum \
-      && cp <path_to_this_repo>/target/presto-ethereum-*-plugin.tar.gz . \
-      && tar xfz presto-ethereum-*-plugin.tar.gz -C plugin/ethereum --strip-components=1
+    $ mkdir -p plugin/tezos \
+      && cp <path_to_this_repo>/target/presto-tezos-*-plugin.tar.gz . \
+      && tar xfz presto-tezos-*-plugin.tar.gz -C plugin/tezos --strip-components=1
     ```  
 
     By the end of this step, your presto installation folder structure should look like:  
@@ -60,22 +60,22 @@ Specify a block range where you can (e.g. `WHERE block.block_number > x AND bloc
       ├── lib
       ├── etc
       │   ├── catalog
-      │   │   └── ethereum.properties
+      │   │   └── tezos.properties
       │   ├── config.properties
       │   ├── jvm.config
       │   └── node.properties
       ├── plugin
-      │   ├── ethereum
+      │   ├── tezos
       │   │   └── <some jars>
       ```
 1. There you go. You can now start the presto server, and query through presto-cli:  
   ```
   $ bin/launcher start
-  $ presto-cli --server localhost:8080 --catalog ethereum --schema default
+  $ presto-cli --server localhost:8080 --catalog tezos --schema default
   ```
 
 ### Use Cases
-Inspired by [An Analysis of the First 100000 Blocks](https://blog.ethereum.org/2015/08/18/frontier-first-100k-blocks/), the following SQL queries capture partially what was depicted in that post.  
+Inspired by [An Analysis of the First 100000 Blocks](https://blog.tezos.org/2015/08/18/frontier-first-100k-blocks/), the following SQL queries capture partially what was depicted in that post.  
 
 - The first 50 block times (in seconds)
 ```sql
@@ -188,12 +188,12 @@ DESCRIBE erc20;
 
 ### Web3 Functions
 In addition to the various built-in [Presto functions](https://prestodb.io/docs/current/functions.html), some web3 functions are ported so that they can be called inline with SQL statements directly. Currently, the supported web3 functions are
-1. [fromWei](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3fromwei)
-1. [toWei](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3towei)
-1. [eth_gasPrice](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgasprice)
-1. [eth_blockNumber](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethblocknumber)
-1. [eth_getBalance](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgetbalance)
-1. [eth_getTransactionCount](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgettransactioncount)
+1. [fromWei](https://github.com/tezos/wiki/wiki/JavaScript-API#web3fromwei)
+1. [toWei](https://github.com/tezos/wiki/wiki/JavaScript-API#web3towei)
+1. [eth_gasPrice](https://github.com/tezos/wiki/wiki/JavaScript-API#web3ethgasprice)
+1. [eth_blockNumber](https://github.com/tezos/wiki/wiki/JavaScript-API#web3ethblocknumber)
+1. [eth_getBalance](https://github.com/tezos/wiki/wiki/JavaScript-API#web3ethgetbalance)
+1. [eth_getTransactionCount](https://github.com/tezos/wiki/wiki/JavaScript-API#web3ethgettransactioncount)
 
 ### Troubleshooting
 
