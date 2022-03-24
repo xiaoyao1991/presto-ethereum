@@ -4,13 +4,10 @@ Unleash the Power of Presto Interactive SQL Querying on Tezos Blockchain
 ### Introduction
 [Presto](https://prestosql.io) is a powerful interactive querying engine that enables running SQL queries on anything -- be it MySQL, HDFS, local file, Kafka -- as long as there exist a connector to the source.
 
-This is a Presto connector to the Tezos blockchain data. With this connector, one can get hands on with Tezos blockchain analytics work without having to know how to play with the nitty gritty Javascript API.
+This is a Presto connector to the Tezos blockchain. With this connector, one can query information from the Tezos network from the comforts of SQL.
 
 ### Prerequisites
-Have an Tezos client that you can connect to. There are 2 options:
-1. Run [Geth](https://github.com/tezos/go-tezos) or [Parity](https://github.com/paritytech/parity) locally.
-1. Use [Infura](https://infura.io), a hosted Tezos client in the cloud.    
-
+TODO
 ### Note
 Specify a block range where you can (e.g. `WHERE block.block_number > x AND block.block_number < y`, or `WHERE transaction.tx_blocknumber > x AND transaction.tx_blocknumber < y`, or `WHERE erc20.erc20_blocknumber > x AND erc20.erc20_blocknumber < y`). Block number is the default and only predicate that can push down to narrow down data scan range. Queries without block ranges will cause presto to retrieve blocks all the way from the first block, which takes forever. 
 
@@ -34,18 +31,6 @@ Specify a block range where you can (e.g. `WHERE block.block_number > x AND bloc
     Paste the following to the tezos.properties:
     ```
     connector.name=tezos
-
-    # You can connect through Tezos HTTP JSON RPC endpoint
-    # IMPORTANT - for local testing start geth with rpcport
-    # geth --rpc --rpcaddr "127.0.0.1" --rpcport "8545"
-    tezos.jsonrpc=http://localhost:8545/
-
-
-    # Or you can connect through IPC socket
-    # tezos.ipc=/path/to/ipc_socketfile
-
-    # Or you can connect to Infura
-    # tezos.infura=https://mainnet.infura.io/<your_token>
     ```
     b. Copy and extract the built plugin to your presto plugin folder  
     ```
@@ -184,33 +169,4 @@ DESCRIBE erc20;
  erc20_value       | double      |       |
  erc20_txhash      | varchar(66) |       |
  erc20_blocknumber | bigint      |       |
-```
-
-### Web3 Functions
-In addition to the various built-in [Presto functions](https://prestodb.io/docs/current/functions.html), some web3 functions are ported so that they can be called inline with SQL statements directly. Currently, the supported web3 functions are
-1. [fromWei](https://github.com/tezos/wiki/wiki/JavaScript-API#web3fromwei)
-1. [toWei](https://github.com/tezos/wiki/wiki/JavaScript-API#web3towei)
-1. [eth_gasPrice](https://github.com/tezos/wiki/wiki/JavaScript-API#web3ethgasprice)
-1. [eth_blockNumber](https://github.com/tezos/wiki/wiki/JavaScript-API#web3ethblocknumber)
-1. [eth_getBalance](https://github.com/tezos/wiki/wiki/JavaScript-API#web3ethgetbalance)
-1. [eth_getTransactionCount](https://github.com/tezos/wiki/wiki/JavaScript-API#web3ethgettransactioncount)
-
-### Troubleshooting
-
-* You must use python2. You will get invalid syntax errors if you use Python3.
-```
--> bin/launcher start
-  File "/your_path/presto-server-0.196/bin/launcher.py", line 38
-    except OSError, e:
-                  ^
-SyntaxError: invalid syntax
-```
-
-* Use Java 8 only. You might get the following errors if you use the wrong Java version.
-
-```
-Unrecognized VM option 'ExitOnOutOfMemoryError'
-Did you mean 'OnOutOfMemoryError=<value>'?
-Error: Could not create the Java Virtual Machine.
-Error: A fatal exception has occurred. Program will exit.
 ```
