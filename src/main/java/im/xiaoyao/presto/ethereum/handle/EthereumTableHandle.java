@@ -1,4 +1,4 @@
-package im.xiaoyao.presto.ethereum;
+package im.xiaoyao.presto.ethereum.handle;
 
 import com.facebook.presto.spi.ConnectorTableHandle;
 import com.facebook.presto.spi.SchemaTableName;
@@ -11,27 +11,21 @@ import static java.util.Objects.requireNonNull;
 
 @EqualsAndHashCode
 @ToString
+/**
+ * Stores information on the table
+ */
 public final class EthereumTableHandle implements ConnectorTableHandle {
-    private final String connectorId;
-
     private final String schemaName;
 
     private final String tableName;
 
     @JsonCreator
     public EthereumTableHandle(
-            @JsonProperty("connectorId") String connectorId,
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName
     ) {
-        this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.tableName = requireNonNull(tableName, "tableName is null");
-    }
-
-    @JsonProperty
-    public String getConnectorId() {
-        return connectorId;
     }
 
     @JsonProperty

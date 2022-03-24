@@ -1,4 +1,4 @@
-package im.xiaoyao.presto.ethereum;
+package im.xiaoyao.presto.ethereum.erc20;
 
 import lombok.Getter;
 

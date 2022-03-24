@@ -1,5 +1,6 @@
 package im.xiaoyao.presto.ethereum;
 
+import im.xiaoyao.presto.ethereum.connector.EthereumConnectorConfig;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.protocol.infura.InfuraHttpService;

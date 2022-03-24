@@ -6,15 +6,15 @@ import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.RecordSet;
 import com.facebook.presto.spi.connector.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
-import com.google.common.collect.ImmutableList;
+import im.xiaoyao.presto.ethereum.handle.EthereumColumnHandle;
+import im.xiaoyao.presto.ethereum.handle.EthereumHandleResolver;
 import org.web3j.protocol.Web3j;
 
 import javax.inject.Inject;
-
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static im.xiaoyao.presto.ethereum.EthereumHandleResolver.convertColumnHandle;
-import static im.xiaoyao.presto.ethereum.EthereumHandleResolver.convertSplit;
+import static im.xiaoyao.presto.ethereum.handle.EthereumHandleResolver.convertSplit;
 
 public class EthereumRecordSetProvider implements ConnectorRecordSetProvider {
     private final Web3j web3j;
@@ -33,13 +33,10 @@ public class EthereumRecordSetProvider implements ConnectorRecordSetProvider {
     ) {
         EthereumSplit ethereumSplit = convertSplit(split);
 
-        ImmutableList.Builder<EthereumColumnHandle> handleBuilder = ImmutableList.builder();
+        List<EthereumColumnHandle> columnHandles = columns.stream()
+                .map(EthereumHandleResolver::convertColumnHandle)
+                .collect(Collectors.toList());
 
-        for (ColumnHandle handle : columns) {
-            EthereumColumnHandle columnHandle = convertColumnHandle(handle);
-            handleBuilder.add(columnHandle);
-        }
-
-        return new EthereumRecordSet(web3j, handleBuilder.build(), ethereumSplit);
+        return new EthereumRecordSet(web3j, columnHandles, ethereumSplit);
     }
 }

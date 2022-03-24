@@ -1,4 +1,4 @@
-package im.xiaoyao.presto.ethereum;
+package im.xiaoyao.presto.ethereum.connector;
 
 import com.facebook.presto.spi.connector.Connector;
 import com.facebook.presto.spi.connector.ConnectorMetadata;
@@ -6,6 +6,10 @@ import com.facebook.presto.spi.connector.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.connector.ConnectorSplitManager;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import com.facebook.presto.spi.transaction.IsolationLevel;
+import im.xiaoyao.presto.ethereum.EthereumMetadata;
+import im.xiaoyao.presto.ethereum.EthereumRecordSetProvider;
+import im.xiaoyao.presto.ethereum.EthereumSplitManager;
+import im.xiaoyao.presto.ethereum.handle.EthereumTransactionHandle;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.log.Logger;
 

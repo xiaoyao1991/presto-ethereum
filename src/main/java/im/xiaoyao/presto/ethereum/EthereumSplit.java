@@ -2,6 +2,8 @@ package im.xiaoyao.presto.ethereum;
 
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.HostAddress;
+import com.facebook.presto.spi.NodeProvider;
+import com.facebook.presto.spi.schedule.NodeSelectionStrategy;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -40,12 +42,12 @@ public class EthereumSplit implements ConnectorSplit {
     }
 
     @Override
-    public boolean isRemotelyAccessible() {
-        return true;
+    public NodeSelectionStrategy getNodeSelectionStrategy() {
+        return NodeSelectionStrategy.NO_PREFERENCE;
     }
 
     @Override
-    public List<HostAddress> getAddresses() {
+    public List<HostAddress> getPreferredNodes(NodeProvider nodeProvider) {
         return Collections.emptyList();
     }
 

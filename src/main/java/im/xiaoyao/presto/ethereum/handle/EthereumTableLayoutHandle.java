@@ -1,8 +1,9 @@
-package im.xiaoyao.presto.ethereum;
+package im.xiaoyao.presto.ethereum.handle;
 
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import im.xiaoyao.presto.ethereum.EthereumBlockRange;
 import lombok.ToString;
 
 import java.util.List;

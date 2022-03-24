@@ -4,6 +4,7 @@ import com.facebook.presto.spi.Plugin;
 import com.facebook.presto.spi.connector.ConnectorFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import im.xiaoyao.presto.ethereum.connector.EthereumConnectorFactory;
 import im.xiaoyao.presto.ethereum.udfs.EthereumUDFs;
 
 import java.util.Set;

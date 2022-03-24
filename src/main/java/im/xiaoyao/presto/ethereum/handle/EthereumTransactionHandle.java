@@ -1,4 +1,4 @@
-package im.xiaoyao.presto.ethereum;
+package im.xiaoyao.presto.ethereum.handle;
 
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 
