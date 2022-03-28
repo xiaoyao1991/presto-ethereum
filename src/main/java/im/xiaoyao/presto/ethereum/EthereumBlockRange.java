@@ -1,6 +1,6 @@
 package im.xiaoyao.presto.ethereum;
 
-import com.facebook.presto.spi.predicate.Marker;
+import com.facebook.presto.common.predicate.Marker;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 

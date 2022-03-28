@@ -1,11 +1,12 @@
 package im.xiaoyao.presto.ethereum;
 
+import com.facebook.presto.common.block.PageBuilderStatus;
 import com.facebook.presto.spi.RecordCursor;
-import com.facebook.presto.spi.block.Block;
-import com.facebook.presto.spi.block.BlockBuilder;
-import com.facebook.presto.spi.block.BlockBuilderStatus;
-import com.facebook.presto.spi.type.StandardTypes;
-import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.common.block.Block;
+import com.facebook.presto.common.block.BlockBuilder;
+import com.facebook.presto.common.block.BlockBuilderStatus;
+import com.facebook.presto.common.type.StandardTypes;
+import com.facebook.presto.common.type.Type;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import io.airlift.log.Logger;
@@ -27,20 +28,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.facebook.presto.spi.type.BigintType.BIGINT;
-import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
-import static com.facebook.presto.spi.type.Chars.isCharType;
-import static com.facebook.presto.spi.type.Chars.truncateToLengthAndTrimSpaces;
-import static com.facebook.presto.spi.type.DateType.DATE;
-import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
-import static com.facebook.presto.spi.type.IntegerType.INTEGER;
-import static com.facebook.presto.spi.type.RealType.REAL;
-import static com.facebook.presto.spi.type.SmallintType.SMALLINT;
-import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
-import static com.facebook.presto.spi.type.TinyintType.TINYINT;
-import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
-import static com.facebook.presto.spi.type.Varchars.isVarcharType;
-import static com.facebook.presto.spi.type.Varchars.truncateToLength;
+import static com.facebook.presto.common.type.BigintType.BIGINT;
+import static com.facebook.presto.common.type.BooleanType.BOOLEAN;
+import static com.facebook.presto.common.type.Chars.isCharType;
+import static com.facebook.presto.common.type.Chars.truncateToLengthAndTrimSpaces;
+import static com.facebook.presto.common.type.DateType.DATE;
+import static com.facebook.presto.common.type.DoubleType.DOUBLE;
+import static com.facebook.presto.common.type.IntegerType.INTEGER;
+import static com.facebook.presto.common.type.RealType.REAL;
+import static com.facebook.presto.common.type.SmallintType.SMALLINT;
+import static com.facebook.presto.common.type.TimestampType.TIMESTAMP;
+import static com.facebook.presto.common.type.TinyintType.TINYINT;
+import static com.facebook.presto.common.type.VarbinaryType.VARBINARY;
+import static com.facebook.presto.common.type.Varchars.isVarcharType;
+import static com.facebook.presto.common.type.Varchars.truncateToLength;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.Float.floatToRawIntBits;
 import static java.util.Objects.requireNonNull;
@@ -298,7 +299,7 @@ public class EthereumRecordCursor implements RecordCursor {
         if (builder != null) {
             currentBuilder = builder.beginBlockEntry();
         } else {
-            currentBuilder = elementType.createBlockBuilder(new BlockBuilderStatus(), list.size());
+            currentBuilder = elementType.createBlockBuilder(new PageBuilderStatus().createBlockBuilderStatus(), list.size());
         }
 
         for (Object element : list) {
@@ -329,7 +330,7 @@ public class EthereumRecordCursor implements RecordCursor {
 
         if (builder == null) {
             builderSynthesized = true;
-            builder = type.createBlockBuilder(new BlockBuilderStatus(), 1);
+            builder = type.createBlockBuilder(new PageBuilderStatus().createBlockBuilderStatus(), 1);
         }
         BlockBuilder currentBuilder = builder.beginBlockEntry();
 
@@ -360,7 +361,7 @@ public class EthereumRecordCursor implements RecordCursor {
         boolean builderSynthesized = false;
         if (builder == null) {
             builderSynthesized = true;
-            builder = type.createBlockBuilder(new BlockBuilderStatus(), 1);
+            builder = type.createBlockBuilder(new PageBuilderStatus().createBlockBuilderStatus(), 1);
         }
         BlockBuilder currentBuilder = builder.beginBlockEntry();
 
